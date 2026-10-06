@@ -1,0 +1,170 @@
+/*
+ * Géométrie de la scène hero. Le mouvement est piloté exclusivement par GSAP
+ * (transform / opacity) : aucune transition ni animation CSS sur les calques
+ * animés, pour éviter que les deux systèmes se battent.
+ */
+
+.stage {
+  /* Taille du "plateau" carré qui contient le rendu 1254×1254. */
+  --box: min(56vw, 104svh, 1000px);
+  --cx: 50%;
+  --cy: 52%;
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--ink);
+  color: var(--fg);
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .stage {
+    --box: min(100vw, 70svh);
+    --cy: 47%;
+    min-height: 600px;
+  }
+}
+
+/* Lumière de sol : une seule source, sous le drone, qui donne un support à l'ombre. */
+.floorLight {
+  position: absolute;
+  left: calc(var(--cx) - var(--box) * 0.75);
+  top: calc(var(--cy) - var(--box) * 0.05);
+  width: calc(var(--box) * 1.5);
+  height: calc(var(--box) * 0.62);
+  background: radial-gradient(closest-side, var(--floor) 0%, rgb(23 23 26 / 0.55) 45%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Assombrissement des bords lors du focus. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 30% 50%, transparent 35%, rgb(0 0 0 / 0.72) 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.parallax {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: var(--cx) var(--cy);
+  z-index: 2;
+}
+
+.rig {
+  position: absolute;
+  left: calc(var(--cx) - var(--box) / 2);
+  top: calc(var(--cy) - var(--box) / 2);
+  width: var(--box);
+  height: var(--box);
+  will-change: transform;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* Ombre de contact : centrée sous la silhouette (bas du drone ≈ 77 % de l'image). */
+.shadowPos {
+  position: absolute;
+  left: 17%;
+  width: 66%;
+  top: 74.5%;
+  height: 9%;
+}
+
+.shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.92) 0%, rgb(0 0 0 / 0.55) 45%, transparent 100%);
+}
+
+.droneButton {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 0;
+}
+
+.droneButton:focus {
+  outline: none;
+}
+
+/* Focus clavier : un trait discret sous le drone plutôt qu'un cadre autour du PNG. */
+.focusMark {
+  position: absolute;
+  left: 42%;
+  width: 16%;
+  top: 83%;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.droneButton:focus-visible .focusMark {
+  opacity: 1;
+}
+
+/* Rendu "hélices en mouvement" recalé dans l'espace pixel du rendu idle. */
+.activeLayer {
+  position: absolute;
+  transform-origin: 0 0;
+  opacity: 0;
+}
+
+.panel {
+  position: absolute;
+  left: 66.5%;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  visibility: hidden;
+  opacity: 0;
+}
+
+@media (max-width: 767px) {
+  .panel {
+    left: 6%;
+    right: 6%;
+    top: auto;
+    bottom: max(7svh, 40px);
+    transform: none;
+  }
+}
+
+.labelLine {
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: 0 50%;
+}
+
+.detailsArrow {
+  display: inline-block;
+}
+
+.close {
+  position: absolute;
+  top: clamp(20px, 3.2vw, 40px);
+  right: clamp(20px, 3.2vw, 44px);
+  z-index: 5;
+  visibility: hidden;
+  opacity: 0;
+}
