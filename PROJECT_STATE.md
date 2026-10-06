@@ -32,4 +32,4 @@ Validation visuelle de la scène 01 par Soufiane, corrections éventuelles, puis
 
 ## Dernier checkpoint
 - Date : 2026-10-06
-- Commit : _renseigné au checkpoint suivant_
+- Commit : `f163fe3` — feat: bootstrap immersive portfolio and build Avata hero scene 01
