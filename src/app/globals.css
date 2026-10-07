@@ -10,6 +10,7 @@
   --faint: #4a4a4a;
   --line: rgb(255 255 255 / 0.16);
   --line-soft: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.32);
   --gutter: clamp(20px, 3.2vw, 44px);
   --accent: #ea6e02; /* orange des protections du DJI Avata 2 */
 }

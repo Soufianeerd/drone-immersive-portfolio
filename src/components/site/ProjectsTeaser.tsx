@@ -4,15 +4,10 @@ import { gsap } from "gsap";
 import { useEffect, useRef } from "react";
 import styles from "./ProjectsTeaser.module.css";
 
-const NEXT = [
-  { id: "services", index: "03", label: "Services" },
-  { id: "a-propos", index: "04", label: "À propos" },
-  { id: "contact", index: "05", label: "Contact" },
-] as const;
 
 /**
- * Amorce de la section 02. Pas encore de projets : un titre, une phrase et
- * l'index des sections à venir, pour que la page se lise comme un site complet.
+ * Amorce de la section 02 : un titre et une phrase, sans faux contenu.
+ * Les vrais projets arriveront dans une étape dédiée.
  */
 export default function ProjectsTeaser() {
   const root = useRef<HTMLElement>(null);
@@ -66,15 +61,6 @@ export default function ProjectsTeaser() {
         </p>
       </div>
 
-      <ol className={styles.next} aria-label="Sections à venir">
-        {NEXT.map((item, i) => (
-          <li key={item.id} id={item.id} data-reveal data-delay={String(0.1 + i * 0.07)} className={styles.row}>
-            <span className={styles.rowIndex}>{item.index}</span>
-            <span className={styles.rowLabel}>{item.label}</span>
-            <span className={styles.rowState}>À venir</span>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

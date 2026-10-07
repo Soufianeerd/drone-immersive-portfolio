@@ -6,13 +6,20 @@
 
 .stage {
   /* Taille du "plateau" carré qui contient le rendu Avata 1254×1254. */
-  --box: min(40vw, 78svh, 800px);
+  --box: min(36vw, 60svh, 720px);
   --cx: 50%;
-  --cy: 56%;
-  /* Objets secondaires (rendus 1448×1086) : largeur et ligne de sol.
-     Le sol des secondaires est un peu plus haut que celui de l'ombre Avata :
-     ils sont posés plus loin dans la profondeur, le drone flotte devant. */
-  --sw: min(25vw, 50svh, 520px);
+  --cy: 58%;
+  /*
+   * Proportions VISUELLES mesurées sur l'alpha réel des PNG (√ aire de la silhouette) :
+   *   Avata = 1 ; Goggles ≈ 0,70 ; télécommande ≈ 0,60.
+   * D'où la largeur de toile de chaque rendu secondaire (1448 px) en fraction de --box.
+   */
+  --gw: calc(var(--box) * 0.648);
+  --rw: calc(var(--box) * 0.59);
+  /* Écart entre les silhouettes visibles */
+  --gap: calc(var(--box) * 0.17);
+  /* Le sol des secondaires est un peu plus haut que l'ombre Avata : ils sont posés
+     plus loin dans la profondeur, le drone flotte devant. */
   --ground: calc(var(--cy) + var(--box) * 0.235);
   position: relative;
   height: 100svh;
@@ -26,11 +33,12 @@
 
 @media (max-width: 767px) {
   .stage {
-    --box: min(94vw, 58svh);
-    --cy: 58%;
-    --sw: min(47vw, 32svh);
+    --box: min(90vw, 52svh);
+    --cy: 62%;
+    --gw: calc(var(--box) * 0.62);
+    --rw: calc(var(--box) * 0.565);
     /* Mobile : les secondaires passent derrière et au-dessus du drone (plus loin). */
-    --ground: calc(var(--cy) - var(--box) * 0.244 + var(--sw) * 0.2);
+    --ground: calc(var(--cy) - var(--box) * 0.17);
     min-height: 600px;
   }
 }
@@ -133,34 +141,49 @@
 .secondary {
   /* --base : bas de la partie pleine de l'objet dans son PNG (mesuré sur l'alpha) */
   position: absolute;
-  width: var(--sw);
+  width: var(--w);
   aspect-ratio: 1448 / 1086;
-  top: calc(var(--ground) - var(--sw) * 0.75 * var(--base));
+  top: calc(var(--ground) - var(--w) * 0.75 * var(--base));
   z-index: 1;
   pointer-events: none;
 }
 
+/*
+ * Placement sur les silhouettes réelles (alpha) et non sur les toiles :
+ *   Avata visible de 50% - 0,4833·box à 50% + 0,4888·box
+ *   Goggles : bord droit visible à 98,8 % de sa toile ; télécommande : bord gauche à 1,4 %.
+ */
 .goggles {
+  --w: var(--gw);
   --base: 0.936;
   --sh-l: 20%;
   --sh-r: 18%;
-  left: calc(16% - var(--sw) / 2);
+  left: calc(50% - var(--box) * 0.4833 - var(--gap) - var(--gw) * 0.988);
 }
 
 .remote {
+  --w: var(--rw);
   --base: 0.907;
   --sh-l: 30%;
   --sh-r: 13%;
-  left: calc(84% - var(--sw) / 2);
+  left: calc(50% + var(--box) * 0.4888 + var(--gap) - var(--rw) * 0.0138);
 }
 
 @media (max-width: 767px) {
   .goggles {
-    left: calc(26% - var(--sw) / 2);
+    left: calc(29.5% - var(--gw) * 0.511);
   }
   .remote {
-    left: calc(74% - var(--sw) / 2);
+    left: calc(71.5% - var(--rw) * 0.501);
   }
+}
+
+/* Vue éclatée : invisible tant que la timeline Détails ne l'affiche pas. */
+.explodeStep {
+  position: absolute;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .secLayer {
@@ -264,13 +287,23 @@
 .editorial {
   position: absolute;
   left: var(--gutter);
-  top: clamp(104px, 15svh, 150px);
+  top: clamp(100px, 14svh, 150px);
   max-width: 560px;
+}
+
+.title {
+  margin-top: 18px;
+  font-size: clamp(30px, min(3.4vw, 5.8svh), 56px);
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+  color: var(--fg);
+  text-wrap: balance;
 }
 
 .caption {
   position: absolute;
-  top: calc(var(--cy) + var(--box) * 0.37);
+  top: calc(var(--cy) + var(--box) * 0.335);
   width: 300px;
   text-align: center;
   font-family: var(--font-geist-mono), ui-monospace, monospace;
@@ -281,16 +314,17 @@
   white-space: nowrap;
 }
 
+/* Centrées sous chaque silhouette visible */
 .capGoggles {
-  left: calc(16% - 150px);
+  left: calc(50% - var(--box) * 0.4833 - var(--gap) - var(--gw) * 0.477 - 150px);
 }
 
 .capAvata {
-  left: calc(50% - 150px);
+  left: calc(50% + var(--box) * 0.003 - 150px);
 }
 
 .capRemote {
-  left: calc(84% - 150px);
+  left: calc(50% + var(--box) * 0.4888 + var(--gap) + var(--rw) * 0.487 - 150px);
 }
 
 .scrollCue {
@@ -350,7 +384,7 @@
 
 @media (max-width: 767px) {
   .editorial {
-    top: 92px;
+    top: 88px;
     right: var(--gutter);
   }
   .caption {

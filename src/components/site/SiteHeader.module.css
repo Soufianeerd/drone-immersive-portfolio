@@ -20,14 +20,13 @@
 }
 
 .brand,
-.link,
-.menuButton {
+.link {
   pointer-events: auto;
 }
 
 .brand {
   position: relative;
-  z-index: 2;
+  padding: 8px 0;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.32em;
@@ -35,11 +34,18 @@
   color: var(--fg);
   /* compense l'espacement final pour un alignement optique */
   margin-right: -0.32em;
+  transition: opacity 0.3s ease;
 }
 
-.navList {
-  display: flex;
-  gap: clamp(24px, 2.8vw, 44px);
+.brand:hover {
+  opacity: 0.75;
+}
+
+.brand:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 6px;
 }
 
 .nav {
@@ -80,99 +86,24 @@
   transform-origin: 0 50%;
 }
 
-/* Pendant le focus de l'Avata, la navigation laisse la place à la fiche. */
+/* Pendant le focus / les détails de l'Avata, la navigation laisse la place aux contrôles de la scène. */
 :global(html[data-hero-focus]) .nav {
   opacity: 0;
   pointer-events: none;
-}
-
-.menuButton {
-  display: none;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--soft);
-  padding: 8px 0;
-}
-
-.menuButton:focus-visible {
-  color: var(--fg);
-  outline: none;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.sheet {
-  display: none;
+  visibility: hidden;
 }
 
 @media (max-width: 767px) {
   .header {
     height: 64px;
   }
-  .nav {
-    display: none;
-  }
-  .menuButton {
-    display: block;
-    position: relative;
-    z-index: 2;
-  }
-  :global(html[data-hero-focus]) .menuButton {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .sheet {
-    display: flex;
-    align-items: flex-end;
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    padding: 0 var(--gutter) 12svh;
-    background: var(--ink);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: auto;
-    transition:
-      opacity 0.35s ease,
-      visibility 0s linear 0.35s;
-  }
-  .sheetOpen {
-    opacity: 1;
-    visibility: visible;
-    transition:
-      opacity 0.35s ease,
-      visibility 0s;
-  }
-  .sheetLink {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-    padding: 10px 0;
-    font-size: 40px;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-    color: var(--fg);
-  }
-  .sheetLink:focus-visible {
-    outline: none;
-    color: var(--accent);
-  }
-  .sheetIndex {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    color: var(--muted);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .header,
   .nav,
-  .link::after,
-  .sheet,
-  .sheetOpen {
+  .brand,
+  .link::after {
     transition: none;
   }
 }

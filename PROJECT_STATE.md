@@ -4,7 +4,7 @@ _Court et factuel. Mis à jour à chaque checkpoint Git qui change l'état du pr
 
 ## État actuel
 - Front-end Next.js 16 / React 19 / TS / Tailwind 4 / GSAP. Aucun backend, aucun déploiement.
-- Page `/` : header du site + hero setup FPV + amorce de la section 02 Projets.
+- Page `/` : header du site + hero setup FPV (avec mode Détails Avata) + amorce de la section 02 Projets.
 - Repo : https://github.com/Soufianeerd/drone-immersive-portfolio — branche `main`.
 
 ## Voir le site
@@ -13,29 +13,34 @@ _Court et factuel. Mis à jour à chaque checkpoint Git qui change l'état du pr
 
 ## Roadmap
 1. Scène Avata — base motion : **validée**.
-2. Hero à trois objets : **implémenté** (DJI Goggles 3 · DJI Avata 2 · DJI FPV Remote Controller 3).
-3. **Hero intégré au site : implémenté, en attente de validation** (header, cadrage éditorial, scroll, amorce 02).
-4. Ensuite : section 02 Projets (contenus réels), puis mode Détails / vues éclatées.
+2. Hero à trois objets : implémenté.
+3. Hero intégré au site : `f75b75d` **non validé** (proportions, ANASS, Détails inactif).
+4. **Passe corrective + parcours Détails Avata : implémentée, en attente de validation.**
+5. Ensuite (après validation seulement) : section 02 Projets avec les vrais contenus.
+
+## Parcours à tester
+Landing → survol / clic Avata → fiche → « Détails » → décomposition (capot ouvert → éclaté moyen → éclaté complet) → écran technique (5 composants) → panneau composant → « ← Vue éclatée » → « ← Retour au drone » → « Fermer » → landing. ANASS ramène à la landing depuis n'importe quel état.
 
 ## Ce que montre la page
-- Header fixe : ANASS + Projets / Services / À propos / Contact (menu plein écran sur mobile). Navigation masquée pendant le focus Avata.
-- Hero : « 01 / Setup FPV », titre « Filmer au plus près du mouvement. », « Créateur d’images — Photo · Vidéo · Drone FPV », légendes des trois objets, indication « Défiler ».
-- Setup FPV : Goggles · Avata (seul objet interactif) · télécommande ; hover, focus, fiche, retour inchangés.
-- Défilement : la scène s'éloigne plus lentement que la page, le texte s'efface ; un défilement pendant le focus referme la fiche.
-- Section 02 « Projets » : titre, phrase « sélection en cours de montage », index 03 Services / 04 À propos / 05 Contact (ancres du header, mentionnés « À venir »).
-- Checks : lint, tsc, build, axe 0 violation (1440 / 390 px, haut, bas de page, focus), pas d'overflow.
+- Header : ANASS (`resetToHome()` dans `src/lib/home.ts` : ferme Détails et focus, remonte en haut, nettoie le hash) + un seul lien réel « Projets ». Navigation masquée pendant focus / Détails.
+- Hero : Goggles · Avata · télécommande, proportions normalisées sur l'alpha réel (Avata 1 ; Goggles ≈ 0,69 ; télécommande ≈ 0,59), légendes centrées sous chaque silhouette.
+- Machine d'états `idle / hover / focused / details` (+ composant ouvert), réversible. Escape remonte d'un niveau à la fois.
+- Mode Détails : trois rendus recalés sur le module caméra (`avata2Details.ts`), fondu / échelle / flou léger, pas de 3D. Étiquettes HTML/SVG (aucun texte incrusté) ; mobile : points numérotés + liste.
+- Panneaux composants : rendus `*-dark.png`, textes repris des rendus annotés DJI.
+- Section 02 : titre + phrase uniquement.
+- Checks : lint, tsc, build ; axe 0 violation (1440 / 390, idle, focus, détails, composant) ; pas d'overflow ; aucune erreur console ; clavier et reduced-motion parcourus de bout en bout.
 
 ## Défauts connus
-1. Rendus Avata 1254 px : légère douceur en focus sur écran Retina → versions ≥ 2400 px souhaitées.
-2. Écart de quelques px sur le contour des carénages entre les deux rendus Avata (masqué par le fondu).
-3. PNG télécommande : inscriptions secondaires non conformes à la photo réelle (« HOLD/RTH » au lieu de « START/STOP », commutateur « N S W » au lieu de « N S M »). Peu lisibles à la taille du hero ; à retoucher avant tout usage en gros plan. Ne jamais les utiliser comme information factuelle.
-4. Textes à valider : titre du hero, fiche Avata, phrase de la section 02.
-5. Tablette portrait (768–1024 px) : composition desktop réduite, beaucoup d'espace vide sous les objets.
-6. Services / À propos / Contact pointent vers l'index « À venir » de la section 02, pas encore vers de vraies sections.
+1. Rendus Avata 1254 px : légère douceur en focus / Détails sur Retina → versions ≥ 2400 px souhaitées.
+2. Écart de quelques px entre rendus Avata (contours carénages ; étapes de décomposition), masqué par les fondus.
+3. PNG télécommande : inscriptions secondaires non conformes à la photo réelle. Ne jamais les utiliser comme information factuelle.
+4. `avata2-electronics-exploded-dark.png` contient des annotations incrustées (anglais/français) dans l'image du panneau Électronique.
+5. Textes à valider : titre du hero, fiche Avata, textes des composants, phrase de la section 02.
+6. Tablette portrait (768–1024 px) : composition desktop réduite, espace vide sous les objets.
 
 ## Prochaine étape prévue
-Validation du hero intégré au site par Soufiane. Ensuite : section 02 Projets avec les vrais contenus.
+Validation par Soufiane du parcours Landing → Avata → Détails → Décomposition → Retour → Landing. Rien d'autre n'est construit avant.
 
 ## Dernier checkpoint
 - Date : 2026-10-07
-- Commit précédent : `d56c87c` — feat: integrate three-object FPV hero composition
+- Commit : feat: complete Avata details flow and refine FPV hero (parent `f75b75d`)
