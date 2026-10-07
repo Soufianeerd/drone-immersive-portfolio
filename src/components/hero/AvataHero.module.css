@@ -5,10 +5,15 @@
  */
 
 .stage {
-  /* Taille du "plateau" carré qui contient le rendu 1254×1254. */
-  --box: min(56vw, 104svh, 1000px);
+  /* Taille du "plateau" carré qui contient le rendu Avata 1254×1254. */
+  --box: min(40vw, 80svh, 800px);
   --cx: 50%;
-  --cy: 52%;
+  --cy: 53%;
+  /* Objets secondaires (rendus 1448×1086) : largeur et ligne de sol.
+     Le sol des secondaires est un peu plus haut que celui de l'ombre Avata :
+     ils sont posés plus loin dans la profondeur, le drone flotte devant. */
+  --sw: min(25vw, 50svh, 520px);
+  --ground: calc(var(--cy) + var(--box) * 0.235);
   position: relative;
   height: 100svh;
   min-height: 560px;
@@ -21,8 +26,11 @@
 
 @media (max-width: 767px) {
   .stage {
-    --box: min(100vw, 70svh);
-    --cy: 47%;
+    --box: min(94vw, 58svh);
+    --cy: 58%;
+    --sw: min(47vw, 32svh);
+    /* Mobile : les secondaires passent derrière et au-dessus du drone (plus loin). */
+    --ground: calc(var(--cy) - var(--box) * 0.244 + var(--sw) * 0.2);
     min-height: 600px;
   }
 }
@@ -30,10 +38,10 @@
 /* Lumière de sol : une seule source, sous le drone, qui donne un support à l'ombre. */
 .floorLight {
   position: absolute;
-  left: calc(var(--cx) - var(--box) * 0.75);
-  top: calc(var(--cy) - var(--box) * 0.05);
-  width: calc(var(--box) * 1.5);
-  height: calc(var(--box) * 0.62);
+  left: calc(var(--cx) - var(--box) * 1.35);
+  top: calc(var(--cy) - var(--box) * 0.1);
+  width: calc(var(--box) * 2.7);
+  height: calc(var(--box) * 0.78);
   background: radial-gradient(closest-side, var(--floor) 0%, rgb(23 23 26 / 0.55) 45%, transparent 100%);
   pointer-events: none;
   z-index: 0;
@@ -104,20 +112,84 @@
   outline: none;
 }
 
-/* Focus clavier : un trait discret sous le drone plutôt qu'un cadre autour du PNG. */
+/* Focus clavier : repère court et discret sous le drone (les moteurs s'activent aussi). */
 .focusMark {
   position: absolute;
-  left: 42%;
-  width: 16%;
-  top: 83%;
-  height: 1px;
+  left: calc(50% - 12px);
+  width: 24px;
+  top: 85%;
+  height: 2px;
+  border-radius: 1px;
   background: var(--accent);
   opacity: 0;
   pointer-events: none;
 }
 
 .droneButton:focus-visible .focusMark {
-  opacity: 1;
+  opacity: 0.75;
+}
+
+/* Objets secondaires */
+.secondary {
+  /* --base : bas de la partie pleine de l'objet dans son PNG (mesuré sur l'alpha) */
+  position: absolute;
+  width: var(--sw);
+  aspect-ratio: 1448 / 1086;
+  top: calc(var(--ground) - var(--sw) * 0.75 * var(--base));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.goggles {
+  --base: 0.936;
+  --sh-l: 20%;
+  --sh-r: 18%;
+  left: calc(16% - var(--sw) / 2);
+}
+
+.remote {
+  --base: 0.907;
+  --sh-l: 30%;
+  --sh-r: 13%;
+  left: calc(84% - var(--sw) / 2);
+}
+
+@media (max-width: 767px) {
+  .goggles {
+    left: calc(26% - var(--sw) / 2);
+  }
+  .remote {
+    left: calc(74% - var(--sw) / 2);
+  }
+}
+
+.secLayer {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% calc(var(--base) * 100%);
+}
+
+/* Ombre de contact : objet posé au sol, ombre courte et dense. */
+.secShadow {
+  position: absolute;
+  left: var(--sh-l);
+  right: var(--sh-r);
+  top: calc(var(--base) * 100% - 3.5%);
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.95) 0%, rgb(0 0 0 / 0.6) 55%, transparent 100%);
+}
+
+/* Ombre ambiante plus large et plus douce sous l'objet posé. */
+.secShadow::after {
+  content: "";
+  position: absolute;
+  left: -14%;
+  right: -14%;
+  top: -40%;
+  height: 230%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.2) 55%, transparent 100%);
 }
 
 /* Rendu "hélices en mouvement" recalé dans l'espace pixel du rendu idle. */

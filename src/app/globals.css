@@ -36,6 +36,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Apparition du hero : masqué uniquement quand JS est actif (classe posée dans <head>). */
+html.js [data-intro] {
+  opacity: 0;
+}
+
 ::selection {
   background: var(--accent);
   color: var(--ink);

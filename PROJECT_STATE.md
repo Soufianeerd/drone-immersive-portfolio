@@ -4,37 +4,33 @@ _Court et factuel. Mis à jour à chaque checkpoint Git qui change l'état du pr
 
 ## État actuel
 - Front-end Next.js 16 / React 19 / TS / Tailwind 4 / GSAP. Aucun backend, aucun déploiement.
-- Une seule page (`/`) contenant la scène Avata (`src/components/hero/`).
+- Une seule page (`/`) : hero setup FPV (`src/components/hero/`).
 - Repo : https://github.com/Soufianeerd/drone-immersive-portfolio — branche `main`.
 
 ## Roadmap
-1. **Scène Avata — base motion : VALIDÉE** (base d'interaction et de motion, **pas le hero final**).
-2. **Hero final à trois objets : PROCHAINE ÉTAPE — bloquée en attente des assets** Goggles 3 + contrôleur FPV.
-3. Ensuite seulement : mode Détails / vues éclatées (non commencé, ne pas démarrer avant l'étape 2).
+1. Scène Avata — base motion : **validée**.
+2. **Hero final à trois objets : implémenté, en attente de validation** (DJI Goggles 3 · DJI Avata 2 · DJI FPV Remote Controller 3).
+3. Ensuite seulement : mode Détails / vues éclatées (non commencé).
 
-## 1. Base Avata validée — à conserver absolument
-- Idle vivant : flottement lent, respiration de l'ombre, micro-parallaxe curseur.
-- Hover (hit-test sur la silhouette réelle) : levée + rapprochement, activation des hélices.
-- Calibration idle → hélices (`avata2Calibration.ts`, affine mesurée) : ne pas modifier sans re-mesure.
-- Focus au clic/tap/Entrée : drone en gros plan vers la gauche, fiche éditoriale à droite (bouton Détails inactif).
-- Retour réversible : Échap, Fermer, clic hors fiche. Variantes tactile et `prefers-reduced-motion`.
+## Hero actuel
+- Matériel réel d'Anass : DJI Goggles 3, DJI Avata 2, DJI FPV Remote Controller 3 (références photo : IMG_3287, IMG_3291).
+- Assets : `public/assets/avata2/` (calibration inchangée), `public/assets/goggles3/goggles3-hero-3q.png`, `public/assets/fpv-remote-controller-3/fpv-remote-controller-3-hero-3q.png`.
+- Idle : Goggles à gauche, Avata au centre (dominant, flottant), télécommande à droite ; sol, lumière et ombres de contact en CSS ; parallaxe par profondeur. Apparition courte (~0,5 s après chargement des images).
+- Hover Avata (seul objet interactif) : moteurs actifs, levée, rapprochement ; Goggles + télécommande reculent et s'atténuent.
+- Focus clic/tap/Entrée : Avata en gros plan à gauche, fiche à droite (Détails inactif) ; secondaires reculent et s'effacent pendant l'avancée.
+- Retour (Échap / Fermer / clic extérieur) : timeline inversée, chaque objet retrouve sa position.
+- Mobile : secondaires derrière et au-dessus du drone ; tap → focus. `prefers-reduced-motion` : fondus uniquement.
+- Checks : lint, tsc, build, axe (0 violation idle/focus/retour, 1440 et 390 px), pas d'overflow.
 
-## 2. Hero final — cible
-- Setup FPV cohérent : **Avata au centre, légèrement dominant** ; contrôleur d'un côté, Goggles 3 de l'autre.
-- Objets secondaires : présence premium, sans concurrencer le drone.
-- Au hover/clic Avata : les deux objets secondaires reculent / s'effacent subtilement pendant que l'Avata prend le focus existant.
-- L'idle actuel « drone seul » n'est **pas** une composition définitive.
-- Corrections à intégrer dans cette étape :
-  - apparition initiale plus immédiate ;
-  - focus clavier orange beaucoup plus discret.
-- **Prérequis bloquant** : assets réels Goggles 3 et contrôleur (modèle exact à confirmer : RC Motion 3 ou FPV Remote Controller 3), détourés, même éclairage / angle que les rendus Avata. **Aucun faux asset, aucune implémentation avant leur disponibilité.**
+## Défauts connus
+1. Rendus Avata 1254 px : légère douceur en focus sur écran Retina → versions ≥ 2400 px souhaitées.
+2. Écart de quelques px sur le contour des carénages entre les deux rendus Avata (masqué par le fondu).
+3. PNG télécommande : inscriptions secondaires non conformes à la photo réelle (« HOLD/RTH » au lieu de « START/STOP », commutateur « N S W » au lieu de « N S M »). Peu lisibles à la taille du hero ; à retoucher avant tout usage en gros plan. Ne jamais les utiliser comme information factuelle.
+4. Texte de la fiche Avata à valider (caractéristiques reprises des visuels fournis).
 
-## Défauts connus (base Avata)
-1. Rendus sources 1254 px : légère douceur en focus sur écran Retina → versions ≥ 2400 px souhaitées.
-2. Écart de quelques px sur le contour des carénages entre les deux rendus (masqué par le fondu).
-3. Mobile : en focus, le drone touche le bord droit.
-4. Texte de la fiche à valider (caractéristiques reprises des visuels fournis).
+## Prochaine étape prévue
+Validation visuelle du hero à trois objets par Soufiane, puis archivage des preuves dans `docs/reviews/`. Ensuite : mode Détails.
 
 ## Dernier checkpoint
-- Date : 2026-10-06
-- Code : `f163fe3` — feat: bootstrap immersive portfolio and build Avata hero scene 01 (synchronisé sur origin/main via `cec8f23`)
+- Date : 2026-10-07
+- Commit : voir `git log -1` — feat: integrate three-object FPV hero composition (le hash est reporté au checkpoint suivant)

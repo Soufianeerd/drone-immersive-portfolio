@@ -28,6 +28,11 @@ Un principe : **l'objet est physique**. Il flotte, s'allume, se rapproche de la 
 - `prefers-reduced-motion` : ni flottement ni parallaxe, déplacements remplacés par des fondus.
 - Tactile : pas de hover, un tap ouvre directement la fiche.
 
+## Composition du hero
+- Setup FPV réel : DJI Goggles 3 (gauche) · DJI Avata 2 (centre) · DJI FPV Remote Controller 3 (droite).
+- L'Avata domine et flotte ; les secondaires sont posés au sol, un peu plus loin (ligne de sol plus haute), ombres de contact courtes.
+- Les secondaires ne sont jamais interactifs : ils reculent au hover de l'Avata et s'effacent au focus.
+
 ## Copy
 Français, sobre, factuel. Caractéristiques produit tirées des visuels fournis.
 Aucune affirmation sur Anass (clients, chiffres, lieux) sans source fournie.

@@ -17,9 +17,11 @@ import {
 import styles from "./AvataHero.module.css";
 
 /**
- * Scène 01 — DJI Avata 2.
+ * Hero — setup FPV : DJI Goggles 3 · DJI Avata 2 · DJI FPV Remote Controller 3.
  *
+ * L'Avata est le seul objet interactif.
  * États : idle → hover (moteurs actifs) → focused (fiche) → retour.
+ * Les deux objets secondaires reculent au hover et s'effacent au focus.
  *
  * Chaque calque n'a qu'un seul propriétaire d'animation :
  *   parallax  → suivi du curseur (quickTo)
@@ -29,6 +31,9 @@ import styles from "./AvataHero.module.css";
  *   lift      → montée / rapprochement au hover
  *   idle/active layers → passage idle ↔ hélices
  *   shadowBreath / shadowFocus / shadow → respiration, focus, hover
+ *   objets secondaires : [data-sec-parallax] (curseur + intro)
+ *                        [data-sec-hover]    (recul au hover)
+ *                        [data-sec-focus]    (effacement au focus, timeline réversible)
  */
 
 type SceneState = "idle" | "hover" | "focused";
@@ -51,6 +56,23 @@ const activeLayerStyle = {
   height: `${(ACTIVE_HEIGHT / IDLE_SIZE) * 100}%`,
   transform: `matrix(${ACTIVE_TO_IDLE.a}, ${ACTIVE_TO_IDLE.b}, ${ACTIVE_TO_IDLE.c}, ${ACTIVE_TO_IDLE.d}, 0, 0)`,
 } as const;
+
+const SECONDARIES = [
+  {
+    key: "goggles",
+    side: -1,
+    src: "/assets/goggles3/goggles3-hero-3q.png",
+    alt: "DJI Goggles 3",
+    className: styles.goggles,
+  },
+  {
+    key: "remote",
+    side: 1,
+    src: "/assets/fpv-remote-controller-3/fpv-remote-controller-3-hero-3q.png",
+    alt: "DJI FPV Remote Controller 3",
+    className: styles.remote,
+  },
+] as const;
 
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -90,6 +112,7 @@ export default function AvataHero() {
     py: gsap.QuickToFunc;
     pr: gsap.QuickToFunc;
     lx: gsap.QuickToFunc;
+    sec: { side: number; x: gsap.QuickToFunc; y: gsap.QuickToFunc }[];
   } | null>(null);
   const floatTweens = useRef<gsap.core.Tween[]>([]);
 
@@ -114,6 +137,21 @@ export default function AvataHero() {
         const box = rigRef.current?.offsetWidth ?? 800;
         const reduced = prefersReducedMotion();
         const lift = box * 0.034;
+        const secHover = stageRef.current?.querySelectorAll<HTMLElement>("[data-sec-hover]") ?? [];
+
+        // Le reste du setup passe au second plan pendant que le drone s'active.
+        secHover.forEach((el) => {
+          const side = Number(el.dataset.side);
+          gsap.to(el, {
+            x: on && !reduced ? -side * box * 0.016 : 0,
+            y: on && !reduced ? -box * 0.007 : 0,
+            scale: on && !reduced ? 0.955 : 1,
+            opacity: on ? 0.78 : 1,
+            duration: on ? 1.05 : 1.15,
+            ease: on ? "expo.out" : "power3.inOut",
+            overwrite: "auto",
+          });
+        });
 
         if (on) {
           // Les hélices floues arrivent par-dessus ; l'idle ne s'efface qu'ensuite,
@@ -166,6 +204,10 @@ export default function AvataHero() {
       m.py(0);
       m.pr(0);
       m.lx(0);
+      m.sec.forEach((q) => {
+        q.x(0);
+        q.y(0);
+      });
       return;
     }
     const { nx, ny, du } = pointer.current;
@@ -175,6 +217,11 @@ export default function AvataHero() {
     m.py(-ny * 7);
     m.pr(hover ? du * 1.6 : nx * 0.35);
     m.lx(-nx * 5);
+    // objets secondaires plus éloignés : moitié moins de déplacement
+    m.sec.forEach((q) => {
+      q.x(-nx * 6);
+      q.y(-ny * 3.5);
+    });
   }, []);
 
   /* ------------------------------------------------------------------ */
@@ -197,7 +244,7 @@ export default function AvataHero() {
     const mobile = W <= MOBILE_MAX;
 
     const scale = mobile
-      ? Math.min((1.04 * W) / droneW, (0.4 * H) / droneH)
+      ? Math.min((0.9 * W) / droneW, (0.4 * H) / droneH)
       : Math.min((0.76 * W) / droneW, (0.8 * H) / droneH);
     const targetX = mobile ? 0.5 * W : 0.27 * W;
     const targetY = mobile ? 0.34 * H : 0.5 * H;
@@ -209,6 +256,7 @@ export default function AvataHero() {
     const labelText = panel.querySelector("[data-label-text]");
     const titleLine = panel.querySelector("[data-title-line]");
     const items = panel.querySelectorAll("[data-panel-item]");
+    const secFocus = stage.querySelectorAll<HTMLElement>("[data-sec-focus]");
     const reduced = prefersReducedMotion();
 
     const tl = gsap.timeline({ paused: true, defaults: { overwrite: "auto" } });
@@ -218,7 +266,8 @@ export default function AvataHero() {
       .to(vignetteRef.current, { opacity: 1, duration: 1.2, ease: "power2.inOut" }, 0);
 
     if (reduced) {
-      tl.to(introRef.current, { opacity: 0, duration: 0.22, ease: "power1.in" }, 0)
+      tl.to(secFocus, { autoAlpha: 0, duration: 0.3, ease: "power1.in" }, 0)
+        .to(introRef.current, { opacity: 0, duration: 0.22, ease: "power1.in" }, 0)
         .set(rig, { x, y, scale }, 0.22)
         .set(shadowFocusRef.current, { opacity: 0 }, 0.22)
         .to(introRef.current, { opacity: 1, duration: 0.35, ease: "power1.out" }, 0.24)
@@ -229,6 +278,20 @@ export default function AvataHero() {
     }
 
     tl.to(rig, { x, y, scale, duration: 1.3, ease: "expo.inOut" }, 0)
+      // Goggles et télécommande reculent et s'effacent pendant que le drone avance :
+      // leur disparition se termine quand l'Avata arrive au premier plan.
+      .to(
+        secFocus,
+        {
+          x: (_i: number, el: HTMLElement) => Number(el.dataset.side) * W * 0.06,
+          y: -H * 0.015,
+          scale: 0.86,
+          autoAlpha: 0,
+          duration: 1.0,
+          ease: "power2.inOut",
+        },
+        0.06,
+      )
       // le drone se rapproche de la caméra : le sol et son ombre s'éloignent
       .to(shadowFocusRef.current, { opacity: 0, scale: 1.3, duration: 0.75, ease: "power2.in" }, 0)
       .set(panel, { autoAlpha: 1 }, 0.5)
@@ -323,31 +386,50 @@ export default function AvataHero() {
   useIsoLayoutEffect(() => {
     const ctx = gsap.context(() => {
       gsap.set([rigRef.current, floatRef.current, liftRef.current, parallaxRef.current], { force3D: true });
+      const secParallax = gsap.utils.toArray<HTMLElement>("[data-sec-parallax]");
       movers.current = {
         px: gsap.quickTo(parallaxRef.current, "x", { duration: 0.9, ease: "power3.out" }),
         py: gsap.quickTo(parallaxRef.current, "y", { duration: 0.9, ease: "power3.out" }),
         pr: gsap.quickTo(parallaxRef.current, "rotation", { duration: 1.1, ease: "power3.out" }),
         lx: gsap.quickTo(lightRef.current, "x", { duration: 1.2, ease: "power3.out" }),
+        sec: secParallax.map((el) => ({
+          side: Number(el.dataset.side),
+          x: gsap.quickTo(el, "x", { duration: 1.1, ease: "power3.out" }),
+          y: gsap.quickTo(el, "y", { duration: 1.1, ease: "power3.out" }),
+        })),
       };
 
       startFloat();
-
-      // Apparition : premier rendu statique déjà composé, puis entrée lente.
-      const reduced = prefersReducedMotion();
-      const chrome = stageRef.current?.querySelectorAll("[data-chrome]") ?? [];
-      const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
-      intro
-        .from(introRef.current, {
-          opacity: 0,
-          y: reduced ? 0 : 26,
-          scale: reduced ? 1 : 0.965,
-          duration: reduced ? 0.6 : 1.8,
-        })
-        .from(shadowFocusRef.current, { opacity: 0, duration: 1.6 }, 0.2)
-        .from(lightRef.current, { opacity: 0, duration: 1.6 }, 0)
-        .from(chrome, { opacity: 0, y: reduced ? 0 : 8, duration: 1, stagger: 0.08 }, 0.5);
     }, stageRef);
     ctxRef.current = ctx;
+
+    // Apparition : courte et immédiate. Les éléments marqués [data-intro] sont masqués
+    // par CSS seulement quand JS est actif (classe `js` posée avant le premier rendu),
+    // donc sans JS la scène reste visible.
+    let cancelled = false;
+    const stage = stageRef.current;
+    const imgs = Array.from(stage?.querySelectorAll<HTMLImageElement>("img[data-hero-img]") ?? []);
+    const decoded = Promise.all(imgs.map((img) => img.decode().catch(() => undefined)));
+    const timeout = new Promise((resolve) => window.setTimeout(resolve, 300));
+    Promise.race([decoded, timeout]).then(() => {
+      if (cancelled) return;
+      ctx.add(() => {
+        const reduced = prefersReducedMotion();
+        const chrome = gsap.utils.toArray<HTMLElement>("[data-chrome]");
+        const secParallax = gsap.utils.toArray<HTMLElement>("[data-sec-parallax]");
+        const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
+        intro
+          .to(lightRef.current, { opacity: 1, duration: 0.6, ease: "power1.out" }, 0)
+          .to(introRef.current, { opacity: 1, duration: 0.45, ease: "power1.out" }, 0)
+          .to(secParallax, { opacity: 1, duration: 0.55, stagger: 0.07, ease: "power1.out" }, 0.05)
+          .to(chrome, { opacity: 1, duration: 0.5, stagger: 0.05, ease: "power1.out" }, 0.2);
+        if (!reduced) {
+          intro
+            .from(introRef.current, { y: 10, scale: 0.985, duration: 0.9 }, 0)
+            .from(secParallax, { scale: 0.985, duration: 0.9, stagger: 0.07 }, 0.05);
+        }
+      });
+    });
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const onMotionPref = () => {
@@ -357,6 +439,7 @@ export default function AvataHero() {
     mq.addEventListener("change", onMotionPref);
 
     return () => {
+      cancelled = true;
       mq.removeEventListener("change", onMotionPref);
       if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
       floatTweens.current = [];
@@ -535,18 +618,19 @@ export default function AvataHero() {
     <section
       ref={stageRef}
       className={styles.stage}
-      aria-label="DJI Avata 2 — le drone FPV d'Anass"
+      aria-label="Setup FPV d'Anass : DJI Goggles 3, DJI Avata 2, DJI FPV Remote Controller 3"
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
       onPointerDown={onPointerDown}
       onClick={onStageClick}
     >
-      <div ref={lightRef} className={styles.floorLight} aria-hidden="true" />
+      <div ref={lightRef} data-intro className={styles.floorLight} aria-hidden="true" />
       <div ref={vignetteRef} className={styles.vignette} aria-hidden="true" />
 
       {/* Chrome idle : le strict minimum */}
       <header
         data-chrome
+        data-intro
         className="pointer-events-none absolute left-[clamp(20px,3.2vw,44px)] top-[clamp(20px,3.2vw,40px)] z-[3] flex items-baseline gap-4"
       >
         <h1 className="flex items-baseline gap-4">
@@ -559,6 +643,7 @@ export default function AvataHero() {
 
       <p
         data-chrome
+        data-intro
         className="pointer-events-none absolute bottom-[clamp(20px,3.2vw,40px)] left-[clamp(20px,3.2vw,44px)] z-[3] font-mono text-[11px] uppercase tracking-[0.14em] text-muted"
       >
         01 <span className="mx-2 text-faint">/</span> Setup FPV
@@ -566,6 +651,7 @@ export default function AvataHero() {
 
       <p
         data-chrome
+        data-intro
         aria-hidden="true"
         className="pointer-events-none absolute bottom-[clamp(20px,3.2vw,40px)] right-[clamp(20px,3.2vw,44px)] z-[3] flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted"
       >
@@ -574,9 +660,33 @@ export default function AvataHero() {
         <span className="inline [@media(hover:hover)]:hidden">Touchez le drone</span>
       </p>
 
+      {/* Objets secondaires du setup : non interactifs, derrière l'Avata */}
+      {SECONDARIES.map((obj) => (
+        <div key={obj.key} className={`${styles.secondary} ${obj.className}`}>
+          <div data-sec-parallax data-intro data-side={obj.side} className={styles.layer}>
+            <div data-sec-hover data-side={obj.side} className={styles.secLayer}>
+              <div data-sec-focus data-side={obj.side} className={styles.secLayer}>
+                <div className={styles.secShadow} aria-hidden="true" />
+                <Image
+                  src={obj.src}
+                  alt={obj.alt}
+                  fill
+                  preload
+                  quality={90}
+                  sizes="(max-width: 767px) 50vw, 32vw"
+                  draggable={false}
+                  data-hero-img
+                  className="select-none object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+
       <div ref={parallaxRef} className={styles.parallax}>
         <div ref={rigRef} className={styles.rig}>
-          <div ref={introRef} className={styles.layer}>
+          <div ref={introRef} data-intro className={styles.layer}>
             <div ref={shadowBreathRef} className={styles.shadowPos} aria-hidden="true">
               <div ref={shadowFocusRef} className={styles.layer}>
                 <div ref={shadowRef} className={styles.shadow} />
@@ -604,6 +714,7 @@ export default function AvataHero() {
                       quality={90}
                       sizes="(max-width: 767px) 100vw, 90vw"
                       draggable={false}
+                      data-hero-img
                       className="select-none object-contain"
                     />
                   </span>
