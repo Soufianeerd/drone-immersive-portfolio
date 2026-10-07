@@ -9,6 +9,8 @@
   --muted: #8a8a88;
   --faint: #4a4a4a;
   --line: rgb(255 255 255 / 0.16);
+  --line-soft: rgb(255 255 255 / 0.08);
+  --gutter: clamp(20px, 3.2vw, 44px);
   --accent: #ea6e02; /* orange des protections du DJI Avata 2 */
 }
 
@@ -29,6 +31,12 @@ html {
   background: var(--ink);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: var(--ink);
   color: var(--fg);
@@ -37,7 +45,8 @@ body {
 }
 
 /* Apparition du hero : masqué uniquement quand JS est actif (classe posée dans <head>). */
-html.js [data-intro] {
+html.js [data-intro],
+html.js [data-reveal] {
   opacity: 0;
 }
 

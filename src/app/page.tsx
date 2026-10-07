@@ -1,9 +1,15 @@
 import AvataHero from "@/components/hero/AvataHero";
+import ProjectsTeaser from "@/components/site/ProjectsTeaser";
+import SiteHeader from "@/components/site/SiteHeader";
 
 export default function Home() {
   return (
-    <main>
-      <AvataHero />
-    </main>
+    <>
+      <SiteHeader />
+      <main id="top">
+        <AvataHero />
+        <ProjectsTeaser />
+      </main>
+    </>
   );
 }

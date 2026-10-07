@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { FocusEvent as ReactFocusEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import {
@@ -98,6 +99,9 @@ export default function AvataHero() {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const sceneScrollRef = useRef<HTMLDivElement>(null);
+  const textScrollRef = useRef<HTMLDivElement>(null);
+  const focusScrollY = useRef(0);
 
   // État "vivant" lu par les handlers sans attendre un rendu React.
   const stateRef = useRef<SceneState>("idle");
@@ -119,6 +123,8 @@ export default function AvataHero() {
   const commit = useCallback((next: SceneState) => {
     stateRef.current = next;
     setState(next);
+    // Le header du site masque sa navigation pendant le focus (voir globals.css).
+    document.documentElement.toggleAttribute("data-hero-focus", next === "focused");
   }, []);
 
   /* ------------------------------------------------------------------ */
@@ -313,6 +319,7 @@ export default function AvataHero() {
     if (stateRef.current === "focused") return;
     if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
     const wasActive = stateRef.current === "hover";
+    focusScrollY.current = window.scrollY;
     commit("focused");
     if (stageRef.current) stageRef.current.style.cursor = "";
     updateParallax();
@@ -449,6 +456,29 @@ export default function AvataHero() {
       ctx.revert();
     };
   }, [startFloat, updateParallax]);
+
+  // Défilement : la scène s'éloigne plus lentement que la page (profondeur),
+  // le texte part plus vite. Un défilement pendant le focus referme la fiche.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const mm = gsap.matchMedia();
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const trigger = { trigger: stage, start: "top top", end: "bottom top", scrub: true };
+      gsap.to(sceneScrollRef.current, { yPercent: 18, opacity: 0.25, ease: "none", scrollTrigger: trigger });
+      gsap.to(textScrollRef.current, { yPercent: -10, opacity: 0, ease: "none", scrollTrigger: { ...trigger, end: "60% top" } });
+    });
+    const onScroll = () => {
+      if (stateRef.current === "focused" && Math.abs(window.scrollY - focusScrollY.current) > 40) closeFocus();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      mm.revert();
+      document.documentElement.removeAttribute("data-hero-focus");
+    };
+  }, [closeFocus]);
 
   // Échap pour revenir.
   useEffect(() => {
@@ -627,39 +657,50 @@ export default function AvataHero() {
       <div ref={lightRef} data-intro className={styles.floorLight} aria-hidden="true" />
       <div ref={vignetteRef} className={styles.vignette} aria-hidden="true" />
 
-      {/* Chrome idle : le strict minimum */}
-      <header
-        data-chrome
-        data-intro
-        className="pointer-events-none absolute left-[clamp(20px,3.2vw,44px)] top-[clamp(20px,3.2vw,40px)] z-[3] flex items-baseline gap-4"
-      >
-        <h1 className="flex items-baseline gap-4">
-          <span className="text-[15px] font-medium tracking-[-0.01em] text-fg">Anass</span>
-          <span className="font-mono text-[11px] font-normal uppercase tracking-[0.14em] text-muted">
-            Drone · Photo · Vidéo
-          </span>
-        </h1>
-      </header>
-
-      <p
-        data-chrome
-        data-intro
-        className="pointer-events-none absolute bottom-[clamp(20px,3.2vw,40px)] left-[clamp(20px,3.2vw,44px)] z-[3] font-mono text-[11px] uppercase tracking-[0.14em] text-muted"
-      >
-        01 <span className="mx-2 text-faint">/</span> Setup FPV
-      </p>
+      {/* Cadrage éditorial : nom, phrase, métiers. Ne concurrence pas les objets. */}
+      <div ref={textScrollRef} className={styles.textScroll}>
+        <div data-chrome data-intro className={styles.editorial}>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+            01 <span className="mx-2 text-faint">/</span> Setup FPV
+          </p>
+          <h1 className="mt-5 text-[clamp(32px,3.7vw,58px)] font-medium leading-[1.02] tracking-[-0.035em] text-fg">
+            <span className="sr-only">Anass — </span>
+            Filmer au plus près
+            <br />
+            du mouvement.
+          </h1>
+          <p className="mt-5 text-[15px] leading-[1.5] text-soft">
+            Créateur d’images
+            <span className="mx-2.5 text-faint">—</span>
+            <span className="text-fg/85">Photo · Vidéo · Drone FPV</span>
+          </p>
+        </div>
+      </div>
 
       <p
         data-chrome
         data-intro
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[clamp(20px,3.2vw,40px)] right-[clamp(20px,3.2vw,44px)] z-[3] flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted"
+        className="pointer-events-none absolute bottom-[clamp(20px,3.2vw,36px)] left-[clamp(20px,3.2vw,44px)] z-[3] flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted"
       >
         <span className="inline-block h-px w-6 bg-faint" />
         <span className="hidden [@media(hover:hover)]:inline">Survolez le drone</span>
         <span className="inline [@media(hover:hover)]:hidden">Touchez le drone</span>
       </p>
 
+      <a
+        href="#projets"
+        data-chrome
+        data-intro
+        className={`${styles.scrollCue} group z-[3] font-mono text-[11px] uppercase tracking-[0.14em] text-muted transition-colors duration-300 hover:text-fg focus-visible:text-fg focus-visible:outline-none`}
+      >
+        <span>Défiler</span>
+        <span className={styles.scrollLine} aria-hidden="true">
+          <span />
+        </span>
+      </a>
+
+      <div ref={sceneScrollRef} className={styles.sceneScroll}>
       {/* Objets secondaires du setup : non interactifs, derrière l'Avata */}
       {SECONDARIES.map((obj) => (
         <div key={obj.key} className={`${styles.secondary} ${obj.className}`}>
@@ -736,6 +777,18 @@ export default function AvataHero() {
             </div>
           </div>
         </div>
+      </div>
+
+        {/* Légendes : une seule ligne commune, effacées avec le reste au focus */}
+        <p data-chrome data-intro className={`${styles.caption} ${styles.capGoggles}`} aria-hidden="true">
+          DJI Goggles 3
+        </p>
+        <p data-chrome data-intro className={`${styles.caption} ${styles.capAvata}`} aria-hidden="true">
+          DJI Avata 2
+        </p>
+        <p data-chrome data-intro className={`${styles.caption} ${styles.capRemote}`} aria-hidden="true">
+          DJI FPV Remote Controller 3
+        </p>
       </div>
 
       {/* Fiche éditoriale */}

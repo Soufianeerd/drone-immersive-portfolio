@@ -6,9 +6,9 @@
 
 .stage {
   /* Taille du "plateau" carré qui contient le rendu Avata 1254×1254. */
-  --box: min(40vw, 80svh, 800px);
+  --box: min(40vw, 78svh, 800px);
   --cx: 50%;
-  --cy: 53%;
+  --cy: 56%;
   /* Objets secondaires (rendus 1448×1086) : largeur et ligne de sol.
      Le sol des secondaires est un peu plus haut que celui de l'ombre Avata :
      ils sont posés plus loin dans la profondeur, le drone flotte devant. */
@@ -233,10 +233,131 @@
 }
 
 .close {
+  /* même ligne que le header du site : remplace sa navigation pendant le focus */
   position: absolute;
-  top: clamp(20px, 3.2vw, 40px);
-  right: clamp(20px, 3.2vw, 44px);
+  top: 22px;
+  right: var(--gutter);
   z-index: 5;
   visibility: hidden;
   opacity: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cadrage éditorial du hero                                           */
+/* ------------------------------------------------------------------ */
+
+.sceneScroll,
+.textScroll {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sceneScroll {
+  z-index: 2;
+}
+
+.textScroll {
+  z-index: 3;
+}
+
+.editorial {
+  position: absolute;
+  left: var(--gutter);
+  top: clamp(104px, 15svh, 150px);
+  max-width: 560px;
+}
+
+.caption {
+  position: absolute;
+  top: calc(var(--cy) + var(--box) * 0.37);
+  width: 300px;
+  text-align: center;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.capGoggles {
+  left: calc(16% - 150px);
+}
+
+.capAvata {
+  left: calc(50% - 150px);
+}
+
+.capRemote {
+  left: calc(84% - 150px);
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: clamp(18px, 3vw, 32px);
+  left: calc(50% - 50px);
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.scrollLine {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 34px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.scrollLine > span {
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  transform-origin: 50% 0;
+  animation: scrollCue 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes scrollCue {
+  0% {
+    transform: scaleY(0);
+    transform-origin: 50% 0;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: 50% 0;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: 50% 100%;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: 50% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollLine > span {
+    animation: none;
+    transform: scaleY(0.5);
+  }
+}
+
+@media (max-width: 767px) {
+  .editorial {
+    top: 92px;
+    right: var(--gutter);
+  }
+  .caption {
+    display: none;
+  }
+  .scrollCue {
+    left: auto;
+    right: calc(var(--gutter) - 30px);
+  }
 }
