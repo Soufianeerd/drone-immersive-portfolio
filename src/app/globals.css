@@ -13,6 +13,13 @@
   --line-strong: rgb(255 255 255 / 0.32);
   --gutter: clamp(20px, 3.2vw, 44px);
   --accent: #ea6e02; /* orange des protections du DJI Avata 2 */
+  --header-h: 72px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 64px;
+  }
 }
 
 @theme inline {
@@ -39,6 +46,7 @@ html {
 }
 
 body {
+  overflow-x: clip;
   background: var(--ink);
   color: var(--fg);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

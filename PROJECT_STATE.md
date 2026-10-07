@@ -4,43 +4,45 @@ _Court et factuel. Mis à jour à chaque checkpoint Git qui change l'état du pr
 
 ## État actuel
 - Front-end Next.js 16 / React 19 / TS / Tailwind 4 / GSAP. Aucun backend, aucun déploiement.
-- Page `/` : header du site + hero setup FPV (avec mode Détails Avata) + amorce de la section 02 Projets.
+- Page `/` : header + hero setup FPV (3 objets interactifs + mode Détails Avata) + amorce de la section 02.
 - Repo : https://github.com/Soufianeerd/drone-immersive-portfolio — branche `main`.
+- **Rien n'est poussé** depuis `d56c87c` : `f75b75d`, `13cd36f` et la refonte ci-dessous restent locaux tant que Soufiane n'a pas validé visuellement.
 
 ## Voir le site
 - Local : `bun install` (une fois) puis `bun dev` → http://localhost:3000
-- Aperçu en ligne (export statique, privé) : artifact Claude « Portfolio Anass », mis à jour à chaque étape.
 
 ## Roadmap
-1. Scène Avata — base motion : **validée**.
-2. Hero à trois objets : implémenté.
-3. Hero intégré au site : `f75b75d` **non validé** (proportions, ANASS, Détails inactif).
-4. **Passe corrective + parcours Détails Avata : implémentée, en attente de validation.**
-5. Ensuite (après validation seulement) : section 02 Projets avec les vrais contenus.
+1. Scène Avata — base motion : validée.
+2. `f75b75d`, `13cd36f` : **non validés** (images coupées au zoom, décomposition qui saute entre 3 rendus, seul l'Avata interactif, retours peu fiables).
+3. **Refonte de l'expérience hero : implémentée, en attente de validation visuelle.**
+4. Rien d'autre n'est construit avant validation (projets, services, à propos, contact, footer : gelés).
 
-## Parcours à tester
-Landing → survol / clic Avata → fiche → « Détails » → décomposition (capot ouvert → éclaté moyen → éclaté complet) → écran technique (5 composants) → panneau composant → « ← Vue éclatée » → « ← Retour au drone » → « Fermer » → landing. ANASS ramène à la landing depuis n'importe quel état.
+## Parcours à valider
+- Home → Goggles → « ← Retour au setup » → Home
+- Home → Controller → ANASS → Home
+- Home → Avata → Détails → composant → « ← Vue éclatée » → « ← Retour au drone » → « ← Retour au setup » → Home
+- Échap : composant → vue éclatée → fiche Avata → Home
 
-## Ce que montre la page
-- Header : ANASS (`resetToHome()` dans `src/lib/home.ts` : ferme Détails et focus, remonte en haut, nettoie le hash) + un seul lien réel « Projets ». Navigation masquée pendant focus / Détails.
-- Hero : Goggles · Avata · télécommande, proportions normalisées sur l'alpha réel (Avata 1 ; Goggles ≈ 0,69 ; télécommande ≈ 0,59), légendes centrées sous chaque silhouette.
-- Machine d'états `idle / hover / focused / details` (+ composant ouvert), réversible. Escape remonte d'un niveau à la fois.
-- Mode Détails : trois rendus recalés sur le module caméra (`avata2Details.ts`), fondu / échelle / flou léger, pas de 3D. Étiquettes HTML/SVG (aucun texte incrusté) ; mobile : points numérotés + liste.
-- Panneaux composants : rendus `*-dark.png`, textes repris des rendus annotés DJI.
-- Section 02 : titre + phrase uniquement.
-- Checks : lint, tsc, build ; axe 0 violation (1440 / 390, idle, focus, détails, composant) ; pas d'overflow ; aucune erreur console ; clavier et reduced-motion parcourus de bout en bout.
+## Architecture
+- Une seule source de vérité : `ExperienceState` = home | focus(produit) | avata-details | avata-part(composant) (`AvataHero.tsx`).
+- `resetToHome()` (`src/lib/home.ts`, logo ANASS) : tue toute timeline, referme tout, efface toutes les transformations, restaure les 3 objets, remonte en haut, rend le focus clavier.
+- « ← Retour au setup » visible dans tous les états hors accueil.
+- Composition : boîtes = silhouettes alpha réelles (`setupProducts.ts`), tailles en unités de conteneur (cqw/cqh) ; aucun overflow ne coupe un produit. Présence mesurée : Avata 1 · Goggles 0,70 · Controller 0,60.
+- Détails : scène fixe dédiée sous le header ; vue éclatée = `avata2-exploded-full.png` seul, découpé en 10 calques par masques (`public/assets/avata2/exploded-masks/`). Caméra = ancre : le drone se pose exactement sur la caméra de la vue éclatée, puis les pièces s'écartent. `open-electronics` et `exploded-medium` ne sont plus utilisés.
+
+## Vérifications faites (navigateur)
+- 1280×720, 1440×900, 1920×1080, zoom 125/150/200 %, 768×1024, 390×844 : aucun produit coupé, pas d'overflow horizontal.
+- Parcours ci-dessus + ANASS depuis la section 02 + ANASS pendant une transition : retour propre, zéro transformation résiduelle.
+- Clavier, toucher, prefers-reduced-motion ; axe 0 violation (accueil, focus, Détails, composant, desktop et mobile) ; console sans erreur ; lint, tsc, build OK.
 
 ## Défauts connus
-1. Rendus Avata 1254 px : légère douceur en focus / Détails sur Retina → versions ≥ 2400 px souhaitées.
-2. Écart de quelques px entre rendus Avata (contours carénages ; étapes de décomposition), masqué par les fondus.
-3. PNG télécommande : inscriptions secondaires non conformes à la photo réelle. Ne jamais les utiliser comme information factuelle.
-4. `avata2-electronics-exploded-dark.png` contient des annotations incrustées (anglais/français) dans l'image du panneau Électronique.
-5. Textes à valider : titre du hero, fiche Avata, textes des composants, phrase de la section 02.
-6. Tablette portrait (768–1024 px) : composition desktop réduite, espace vide sous les objets.
-
-## Prochaine étape prévue
-Validation par Soufiane du parcours Landing → Avata → Détails → Décomposition → Retour → Landing. Rien d'autre n'est construit avant.
+1. Rendus Avata 1254 px : douceur sur Retina en focus / Détails.
+2. Recomposition (retour au drone) : le cadre passe brièvement par un état intermédiaire peu lisible (fondu court).
+3. Découpe des calques de la vue éclatée faite à la main : quelques pixels du châssis bougent avec la caméra / les hélices pendant le mouvement (invisible au repos).
+4. PNG télécommande : inscriptions non conformes à la photo réelle, plus visibles en focus (gros plan).
+5. Textes Goggles 3 et Remote Controller 3 rédigés prudemment, à valider ; idem titre hero et textes composants.
+6. Image du panneau Électronique : annotations incrustées dans le PNG.
 
 ## Dernier checkpoint
 - Date : 2026-10-07
-- Commit : feat: complete Avata details flow and refine FPV hero (parent `f75b75d`)
+- Commit : fix: rebuild FPV hero experience (state machine, three interactive products, anchored Avata explode) — local, non poussé.

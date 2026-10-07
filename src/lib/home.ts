@@ -1,18 +1,20 @@
 /**
- * Retour à l'accueil — point d'entrée unique.
+ * Retour à l'accueil — point d'entrée unique (logo ANASS, contrôles « accueil »).
  *
- * Utilisé par le logo ANASS du header (et tout futur contrôle « accueil »).
- * La scène hero écoute HOME_RESET_EVENT pour refermer Détails / focus / hover
- * et restaurer le setup FPV ; ici on remet seulement l'URL et le scroll en état.
+ * La scène hero écoute HOME_RESET_EVENT : elle tue toute animation, referme
+ * composant / Détails / focus, efface les transformations, restaure le setup et
+ * remonte en haut de page (event.preventDefault() signale qu'elle s'en charge).
  */
 export const HOME_RESET_EVENT = "anass:home";
 
 export function resetToHome() {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent(HOME_RESET_EVENT));
   if (window.location.hash) {
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+  const handled = !window.dispatchEvent(new CustomEvent(HOME_RESET_EVENT, { cancelable: true }));
+  if (!handled) {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+  }
 }

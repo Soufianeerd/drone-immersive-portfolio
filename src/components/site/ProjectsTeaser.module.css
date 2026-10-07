@@ -1,5 +1,6 @@
 .section {
   position: relative;
+  z-index: 5;
   min-height: 70svh;
   padding: clamp(96px, 16svh, 180px) var(--gutter) clamp(96px, 18svh, 200px);
   background: var(--ink);

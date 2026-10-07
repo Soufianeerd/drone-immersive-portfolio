@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 50;
-  height: 72px;
+  height: var(--header-h);
   padding: 0 var(--gutter);
   display: flex;
   align-items: center;
@@ -91,12 +91,6 @@
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-}
-
-@media (max-width: 767px) {
-  .header {
-    height: 64px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

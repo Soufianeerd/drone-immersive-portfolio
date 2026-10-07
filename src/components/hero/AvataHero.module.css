@@ -1,31 +1,18 @@
 /*
- * Géométrie de la scène hero. Le mouvement est piloté exclusivement par GSAP
- * (transform / opacity) : aucune transition ni animation CSS sur les calques
- * animés, pour éviter que les deux systèmes se battent.
+ * Hero — setup FPV. Composition dérivée de l'espace réellement disponible
+ * (unités de conteneur), jamais d'une toile fixe. Aucun overflow ne coupe un
+ * produit : chaque boîte épouse la silhouette réelle, le PNG déborde librement.
+ * Mouvement : GSAP uniquement (transform / opacity), aucune transition CSS sur les
+ * calques animés.
  */
 
 .stage {
-  /* Taille du "plateau" carré qui contient le rendu Avata 1254×1254. */
-  --box: min(36vw, 60svh, 720px);
-  --cx: 50%;
-  --cy: 58%;
-  /*
-   * Proportions VISUELLES mesurées sur l'alpha réel des PNG (√ aire de la silhouette) :
-   *   Avata = 1 ; Goggles ≈ 0,70 ; télécommande ≈ 0,60.
-   * D'où la largeur de toile de chaque rendu secondaire (1448 px) en fraction de --box.
-   */
-  --gw: calc(var(--box) * 0.648);
-  --rw: calc(var(--box) * 0.59);
-  /* Écart entre les silhouettes visibles */
-  --gap: calc(var(--box) * 0.17);
-  /* Le sol des secondaires est un peu plus haut que l'ombre Avata : ils sont posés
-     plus loin dans la profondeur, le drone flotte devant. */
-  --ground: calc(var(--cy) + var(--box) * 0.235);
   position: relative;
   height: 100svh;
-  min-height: 560px;
-  overflow: hidden;
-  isolation: isolate;
+  min-height: 520px;
+  display: grid;
+  grid-template-rows: var(--header-h) auto minmax(0, 1fr) auto;
+  container: stage / size;
   background: var(--ink);
   color: var(--fg);
   touch-action: manipulation;
@@ -33,61 +20,221 @@
 
 @media (max-width: 767px) {
   .stage {
-    --box: min(90vw, 52svh);
-    --cy: 62%;
-    --gw: calc(var(--box) * 0.62);
-    --rw: calc(var(--box) * 0.565);
-    /* Mobile : les secondaires passent derrière et au-dessus du drone (plus loin). */
-    --ground: calc(var(--cy) - var(--box) * 0.17);
     min-height: 600px;
   }
 }
 
-/* Lumière de sol : une seule source, sous le drone, qui donne un support à l'ombre. */
-.floorLight {
-  position: absolute;
-  left: calc(var(--cx) - var(--box) * 1.35);
-  top: calc(var(--cy) - var(--box) * 0.1);
-  width: calc(var(--box) * 2.7);
-  height: calc(var(--box) * 0.78);
-  background: radial-gradient(closest-side, var(--floor) 0%, rgb(23 23 26 / 0.55) 45%, transparent 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Assombrissement des bords lors du focus. */
 .vignette {
   position: absolute;
   inset: 0;
   background: radial-gradient(120% 90% at 30% 50%, transparent 35%, rgb(0 0 0 / 0.72) 100%);
   opacity: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
-.parallax {
-  position: absolute;
-  inset: 0;
+/* ------------------------------------------------------------------ */
+/* Cadrage éditorial                                                   */
+/* ------------------------------------------------------------------ */
+
+.editorialRow {
+  grid-row: 2;
+  position: relative;
+  z-index: 3;
+  padding: clamp(4px, 2cqh, 28px) var(--gutter) 0;
   pointer-events: none;
-  transform-origin: var(--cx) var(--cy);
+}
+
+.editorial {
+  max-width: 560px;
+}
+
+.title {
+  margin-top: 14px;
+  font-size: clamp(28px, min(3.4cqw, 5.6cqh), 56px);
+  font-weight: 500;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+/* ------------------------------------------------------------------ */
+/* Setup : trois produits                                               */
+/* ------------------------------------------------------------------ */
+
+.setup {
+  grid-row: 3;
+  position: relative;
+  z-index: 2;
+  container: setup / size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.row {
+  /*
+   * --wa = largeur de silhouette de l'Avata, bornée par :
+   *   la largeur : Avata + Goggles (0,612) + Remote (0,58) + 2 écarts (0,13) = 2,452 · wa
+   *   la hauteur : silhouette (0,528) + flottement / ombre / légende
+   */
+  --wa: min(calc(100cqw * 0.9 / 2.452), calc((100cqh - 48px) / 0.68), 760px);
+  --gap: calc(var(--wa) * 0.13);
+  --float: calc(var(--wa) * 0.06);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--gap);
+  --pad-b: 40px;
+  padding-bottom: var(--pad-b);
+}
+
+.product {
+  position: relative;
+  flex: none;
+  width: calc(var(--wa) * var(--rel));
+}
+
+.avata {
+  order: 2;
+  margin-bottom: var(--float);
   z-index: 2;
 }
 
-.rig {
-  position: absolute;
-  left: calc(var(--cx) - var(--box) / 2);
-  top: calc(var(--cy) - var(--box) / 2);
-  width: var(--box);
-  height: var(--box);
-  will-change: transform;
+.goggles {
+  order: 1;
+  z-index: 1;
 }
 
-.layer {
+.controller {
+  order: 3;
+  z-index: 1;
+}
+
+.fill {
   position: absolute;
   inset: 0;
 }
 
-/* Ombre de contact : centrée sous la silhouette (bas du drone ≈ 77 % de l'image). */
+.canvas {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Bouton = silhouette du produit (clavier, toucher, lecteurs d'écran). */
+.hit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hit:focus {
+  outline: none;
+}
+
+.hit:focus-visible::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 12px);
+  bottom: -14px;
+  width: 24px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.caption {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 16px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+  transition: color 0.4s ease;
+}
+
+.avata .caption {
+  top: calc(100% + var(--float) + 16px);
+}
+
+.stage[data-hover="goggles"] .goggles .caption,
+.stage[data-hover="avata"] .avata .caption,
+.stage[data-hover="controller"] .controller .caption {
+  color: var(--fg);
+}
+
+/* Portrait : Goggles et télécommande au second plan, Avata devant. */
+@container stage (orientation: portrait) {
+  .row {
+    --wa: min(80cqw, calc((100cqh - 24px) / 1.05), 640px);
+    --back: 0.88;
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas:
+      "g c"
+      "a a";
+    align-items: end;
+    justify-items: center;
+    column-gap: calc(var(--wa) * 0.06);
+    row-gap: calc(var(--wa) * 0.1);
+    --pad-b: calc(var(--wa) * 0.04);
+  }
+  .goggles {
+    grid-area: g;
+    width: calc(var(--wa) * var(--rel) * var(--back));
+  }
+  .controller {
+    grid-area: c;
+    width: calc(var(--wa) * var(--rel) * var(--back));
+  }
+  .avata {
+    grid-area: a;
+  }
+  .caption {
+    display: none;
+  }
+}
+
+/* Lumière de sol : une seule source, sous l'Avata. Décor rogné à la largeur de la scène. */
+.decor {
+  position: absolute;
+  left: calc(50% - 50cqw);
+  width: 100cqw;
+  top: -30%;
+  height: 180%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.floorLight {
+  position: absolute;
+  left: calc(50% - var(--wa) * 1.4);
+  width: calc(var(--wa) * 2.8);
+  height: calc(var(--wa) * 0.8);
+  /* sol de l'Avata = bas de la rangée - marge basse ; le décor déborde de 50 % sous la rangée */
+  bottom: calc(100% * 0.5 / 1.8 + var(--pad-b) - var(--wa) * 0.4 + var(--float) * 0.3);
+  background: radial-gradient(closest-side, var(--floor) 0%, rgb(23 23 26 / 0.55) 45%, transparent 100%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Avata : calques internes (repère de la toile 1254 × 1254)            */
+/* ------------------------------------------------------------------ */
+
 .shadowPos {
   position: absolute;
   left: 17%;
@@ -103,96 +250,13 @@
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.92) 0%, rgb(0 0 0 / 0.55) 45%, transparent 100%);
 }
 
-.droneButton {
+.activeLayer {
   position: absolute;
-  inset: 0;
-  pointer-events: auto;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  cursor: default;
-  -webkit-tap-highlight-color: transparent;
-  border-radius: 0;
-}
-
-.droneButton:focus {
-  outline: none;
-}
-
-/* Focus clavier : repère court et discret sous le drone (les moteurs s'activent aussi). */
-.focusMark {
-  position: absolute;
-  left: calc(50% - 12px);
-  width: 24px;
-  top: 85%;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--accent);
+  transform-origin: 0 0;
   opacity: 0;
-  pointer-events: none;
 }
 
-.droneButton:focus-visible .focusMark {
-  opacity: 0.75;
-}
-
-/* Objets secondaires */
-.secondary {
-  /* --base : bas de la partie pleine de l'objet dans son PNG (mesuré sur l'alpha) */
-  position: absolute;
-  width: var(--w);
-  aspect-ratio: 1448 / 1086;
-  top: calc(var(--ground) - var(--w) * 0.75 * var(--base));
-  z-index: 1;
-  pointer-events: none;
-}
-
-/*
- * Placement sur les silhouettes réelles (alpha) et non sur les toiles :
- *   Avata visible de 50% - 0,4833·box à 50% + 0,4888·box
- *   Goggles : bord droit visible à 98,8 % de sa toile ; télécommande : bord gauche à 1,4 %.
- */
-.goggles {
-  --w: var(--gw);
-  --base: 0.936;
-  --sh-l: 20%;
-  --sh-r: 18%;
-  left: calc(50% - var(--box) * 0.4833 - var(--gap) - var(--gw) * 0.988);
-}
-
-.remote {
-  --w: var(--rw);
-  --base: 0.907;
-  --sh-l: 30%;
-  --sh-r: 13%;
-  left: calc(50% + var(--box) * 0.4888 + var(--gap) - var(--rw) * 0.0138);
-}
-
-@media (max-width: 767px) {
-  .goggles {
-    left: calc(29.5% - var(--gw) * 0.511);
-  }
-  .remote {
-    left: calc(71.5% - var(--rw) * 0.501);
-  }
-}
-
-/* Vue éclatée : invisible tant que la timeline Détails ne l'affiche pas. */
-.explodeStep {
-  position: absolute;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.secLayer {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% calc(var(--base) * 100%);
-}
-
-/* Ombre de contact : objet posé au sol, ombre courte et dense. */
+/* Objets posés : ombre de contact courte et dense + ombre ambiante. */
 .secShadow {
   position: absolute;
   left: var(--sh-l);
@@ -203,7 +267,6 @@
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.95) 0%, rgb(0 0 0 / 0.6) 55%, transparent 100%);
 }
 
-/* Ombre ambiante plus large et plus douce sous l'objet posé. */
 .secShadow::after {
   content: "";
   position: absolute;
@@ -215,135 +278,64 @@
   background: radial-gradient(closest-side, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0.2) 55%, transparent 100%);
 }
 
-/* Rendu "hélices en mouvement" recalé dans l'espace pixel du rendu idle. */
-.activeLayer {
-  position: absolute;
-  transform-origin: 0 0;
-  opacity: 0;
-}
-
-.panel {
-  position: absolute;
-  left: 66.5%;
-  right: 5%;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 4;
-  visibility: hidden;
-  opacity: 0;
-}
-
-@media (max-width: 767px) {
-  .panel {
-    left: 6%;
-    right: 6%;
-    top: auto;
-    bottom: max(7svh, 40px);
-    transform: none;
-  }
-}
-
-.labelLine {
-  display: inline-block;
-  width: 28px;
-  height: 1px;
-  background: var(--accent);
-  transform-origin: 0 50%;
-}
-
-.detailsArrow {
-  display: inline-block;
-}
-
-.close {
-  /* même ligne que le header du site : remplace sa navigation pendant le focus */
-  position: absolute;
-  top: 22px;
-  right: var(--gutter);
-  z-index: 5;
-  visibility: hidden;
-  opacity: 0;
-}
-
 /* ------------------------------------------------------------------ */
-/* Cadrage éditorial du hero                                           */
+/* Pied de scène                                                        */
 /* ------------------------------------------------------------------ */
 
-.sceneScroll,
-.textScroll {
-  position: absolute;
-  inset: 0;
+.foot {
+  grid-row: 4;
+  position: relative;
+  z-index: 3;
+  height: clamp(52px, 9cqh, 76px);
+  padding: 0 var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
   pointer-events: none;
 }
 
-.sceneScroll {
-  z-index: 2;
-}
-
-.textScroll {
-  z-index: 3;
-}
-
-.editorial {
-  position: absolute;
-  left: var(--gutter);
-  top: clamp(100px, 14svh, 150px);
-  max-width: 560px;
-}
-
-.title {
-  margin-top: 18px;
-  font-size: clamp(30px, min(3.4vw, 5.8svh), 56px);
-  font-weight: 500;
-  line-height: 1.03;
-  letter-spacing: -0.035em;
-  color: var(--fg);
-  text-wrap: balance;
-}
-
-.caption {
-  position: absolute;
-  top: calc(var(--cy) + var(--box) * 0.335);
-  width: 300px;
-  text-align: center;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* Centrées sous chaque silhouette visible */
-.capGoggles {
-  left: calc(50% - var(--box) * 0.4833 - var(--gap) - var(--gw) * 0.477 - 150px);
-}
-
-.capAvata {
-  left: calc(50% + var(--box) * 0.003 - 150px);
-}
-
-.capRemote {
-  left: calc(50% + var(--box) * 0.4888 + var(--gap) + var(--rw) * 0.487 - 150px);
+.hint::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--faint);
 }
 
 .scrollCue {
-  position: absolute;
-  bottom: clamp(18px, 3vw, 32px);
-  left: calc(50% - 50px);
-  width: 100px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 12px;
-  pointer-events: auto;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.scrollCue:hover,
+.scrollCue:focus-visible {
+  color: var(--fg);
+  outline: none;
 }
 
 .scrollLine {
   position: relative;
   display: block;
   width: 1px;
-  height: 34px;
+  height: 28px;
   overflow: hidden;
   background: var(--line);
 }
@@ -375,23 +367,155 @@
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Fiche produit (focus)                                                */
+/* ------------------------------------------------------------------ */
+
+.panel {
+  position: fixed;
+  z-index: 30;
+  top: var(--header-h);
+  bottom: 0;
+  left: 58%;
+  right: var(--gutter);
+  display: flex;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px 0;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.panelInner {
+  margin: auto 0;
+  max-width: 520px;
+}
+
+.panelLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.labelLine {
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  transform-origin: 0 50%;
+}
+
+.panelTitle {
+  margin-top: 22px;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  font-size: clamp(36px, min(5.2vw, 9svh), 92px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  color: var(--fg);
+  text-wrap: balance;
+  outline: none;
+}
+
+.panelTitleLong {
+  font-size: clamp(32px, min(3.8vw, 7.5svh), 68px);
+}
+
+.panelText {
+  margin-top: 24px;
+  max-width: 40ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+.panelAction {
+  margin-top: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+  transition: border-color 0.3s ease;
+}
+
+.panelAction:hover,
+.panelAction:focus-visible {
+  border-bottom-color: var(--accent);
+  outline: none;
+}
+
+.panelAction > span {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.panelAction:hover > span {
+  transform: translateX(4px);
+}
+
+@media (orientation: portrait) {
+  .panel {
+    /* top posé en JS sous la zone produit */
+    left: var(--gutter);
+    right: var(--gutter);
+    align-items: flex-start;
+    padding: 8px 0 24px;
+  }
+}
+
+/* Contrôle global, sur la ligne du header : présent dans tous les états hors accueil. */
+.home {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  right: var(--gutter);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--soft);
+  visibility: hidden;
+  opacity: 0;
+  transition: color 0.3s ease;
+}
+
+.home:hover,
+.home:focus-visible {
+  color: var(--fg);
+  outline: none;
+}
+
+.home:focus-visible span:last-child {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scrollLine > span {
     animation: none;
     transform: scaleY(0.5);
   }
-}
-
-@media (max-width: 767px) {
-  .editorial {
-    top: 88px;
-    right: var(--gutter);
-  }
-  .caption {
-    display: none;
-  }
-  .scrollCue {
-    left: auto;
-    right: calc(var(--gutter) - 30px);
+  .caption,
+  .scrollCue,
+  .panelAction,
+  .panelAction > span,
+  .home {
+    transition: none;
   }
 }

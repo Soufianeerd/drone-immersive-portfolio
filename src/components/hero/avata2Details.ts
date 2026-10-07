@@ -1,56 +1,93 @@
 /**
- * Données du mode Détails (vue éclatée du DJI Avata 2).
+ * Mode Détails — vue éclatée du DJI Avata 2.
  *
- * Les trois rendus de décomposition n'ont ni le même cadrage ni la même échelle.
- * Ils sont recalés sur le MODULE CAMÉRA (milieu et écart des deux protections orange,
- * mesurés sur chaque PNG) : la caméra reste immobile pendant la décomposition et
- * les autres pièces s'en éloignent. Les valeurs projettent chaque image dans
- * l'espace pixel du rendu idle (1254 × 1254) :
+ * Une seule image source : `avata2-exploded-full.png` (1254 × 1254). Elle est
+ * découpée en calques disjoints par des masques (public/assets/avata2/exploded-masks,
+ * générés hors-ligne à partir de polygones tracés sur le rendu) : au repos, les
+ * calques recomposent exactement le rendu, pixel pour pixel.
  *
- *   x_idle = s · x + tx      y_idle = s · y + ty
+ * Animation : la CAMÉRA est l'ancre. Le drone assemblé (rendu idle) est recalé sur
+ * le module caméra du rendu éclaté (milieu et écart des protections orange) :
+ *
+ *   x_idle = 1,0674 · x_full + 30,8      y_idle = 1,0674 · y_full + 62,5
+ *
+ * Chaque calque part d'une position « assemblée » (`from`, en px du rendu éclaté,
+ * estimée par superposition avec le drone assemblé) et rejoint sa place éclatée.
  */
 
-export type ExplodeStep = {
-  key: "open" | "medium" | "full";
-  src: string;
-  s: number;
-  tx: number;
-  ty: number;
-  /** Milieu du module caméra dans l'image (px), origine des micro-échelles. */
-  anchor: { x: number; y: number };
-};
+export const FULL_SRC = "/assets/avata2/avata2-exploded-full.png";
+export const FULL_SIZE = 1254;
 
-export const EXPLODE_STEPS: readonly ExplodeStep[] = [
-  {
-    key: "open",
-    src: "/assets/avata2/avata2-open-electronics.png",
-    s: 1.0097,
-    tx: 21.5,
-    ty: -39.5,
-    anchor: { x: 412, y: 774.5 },
-  },
-  {
-    key: "medium",
-    src: "/assets/avata2/avata2-exploded-medium.png",
-    s: 1.1566,
-    tx: -112.5,
-    ty: -152.7,
-    anchor: { x: 475.5, y: 774 },
-  },
-  {
-    key: "full",
-    src: "/assets/avata2/avata2-exploded-full.png",
-    s: 1.0674,
-    tx: 30.8,
-    ty: 62.5,
-    anchor: { x: 381, y: 637 },
-  },
-] as const;
-
-/** Silhouette (alpha > 50 %) de la vue éclatée complète, en px de son image. */
+/** Silhouette de la vue éclatée (px) : la toile Détails épouse cette boîte. */
 export const FULL_BOUNDS = { left: 22, top: 31, right: 1238, bottom: 1215 } as const;
+const BW = FULL_BOUNDS.right - FULL_BOUNDS.left;
+const BH = FULL_BOUNDS.bottom - FULL_BOUNDS.top;
+export const FULL_ASPECT = `${BW} / ${BH}`;
+
+/** Toile du rendu idle exprimée dans le repère du rendu éclaté. */
+const IDLE_SCALE = 1.0674;
+const IDLE_IN_FULL = { left: -30.8 / IDLE_SCALE, top: -62.5 / IDLE_SCALE, size: FULL_SIZE / IDLE_SCALE };
+
+const pct = (n: number) => `${(n * 100).toFixed(4)}%`;
+
+/** Emplacement exact du drone assemblé dans la toile Détails (cible du recalage). */
+export const GHOST_STYLE = {
+  left: pct((IDLE_IN_FULL.left - FULL_BOUNDS.left) / BW),
+  top: pct((IDLE_IN_FULL.top - FULL_BOUNDS.top) / BH),
+  width: pct(IDLE_IN_FULL.size / BW),
+  height: pct(IDLE_IN_FULL.size / BH),
+} as const;
 
 export type PartId = "camera" | "battery" | "propulsion" | "electronics" | "sensors";
+
+export type ExplodeLayer = {
+  key: string;
+  /** Boîte du masque dans le rendu éclaté (px). */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Position « assemblée » de départ : décalage (px du rendu éclaté) et échelle. */
+  from: { x: number; y: number; s: number };
+  part: PartId | null;
+};
+
+/** Ordre = ordre d'empilement pendant le mouvement (la caméra, ancre, au-dessus). */
+export const LAYERS: readonly ExplodeLayer[] = [
+  { key: "frame", x: 0, y: 7, w: 1244, h: 1225, from: { x: -77, y: -238, s: 0.95 }, part: null },
+  { key: "bottom", x: 401, y: 891, w: 530, h: 330, from: { x: -100, y: -340, s: 0.94 }, part: "sensors" },
+  { key: "electronics", x: 502, y: 588, w: 333, h: 237, from: { x: -100, y: -145, s: 0.95 }, part: "electronics" },
+  { key: "battery", x: 568, y: 429, w: 300, h: 173, from: { x: -115, y: -45, s: 0.95 }, part: "battery" },
+  { key: "shell", x: 368, y: 26, w: 520, h: 458, from: { x: -74, y: 144, s: 0.96 }, part: null },
+  { key: "propTL", x: 91, y: 240, w: 307, h: 333, from: { x: 185, y: -12, s: 0.92 }, part: "propulsion" },
+  { key: "propTR", x: 918, y: 306, w: 310, h: 322, from: { x: -131, y: 14, s: 0.92 }, part: "propulsion" },
+  { key: "propBL", x: 83, y: 673, w: 250, h: 277, from: { x: 24, y: -261, s: 0.92 }, part: "propulsion" },
+  { key: "propBR", x: 923, y: 703, w: 182, h: 230, from: { x: -235, y: -159, s: 0.92 }, part: "propulsion" },
+  { key: "camera", x: 270, y: 478, w: 367, h: 235, from: { x: 0, y: 0, s: 1 }, part: "camera" },
+] as const;
+
+export function layerStyle(l: ExplodeLayer) {
+  const mask = `url(/assets/avata2/exploded-masks/${l.key}.png)`;
+  return {
+    box: {
+      left: pct((l.x - FULL_BOUNDS.left) / BW),
+      top: pct((l.y - FULL_BOUNDS.top) / BH),
+      width: pct(l.w / BW),
+      height: pct(l.h / BH),
+      maskImage: mask,
+      WebkitMaskImage: mask,
+    },
+    img: {
+      left: pct(-l.x / l.w),
+      top: pct(-l.y / l.h),
+      width: pct(FULL_SIZE / l.w),
+      height: pct(FULL_SIZE / l.h),
+    },
+  };
+}
+
+/** Conversion px du rendu éclaté → fraction de la toile Détails. */
+export const BOUNDS_W = BW;
 
 export type Part = {
   id: PartId;
@@ -58,10 +95,10 @@ export type Part = {
   title: string;
   text: string;
   img: string;
-  /** Position du point sur la vue éclatée complète, en % de l'image. */
+  /** Point sur la vue éclatée, en px du rendu. */
   dot: { x: number; y: number };
-  /** Côté et hauteur (en % de l'image) de l'étiquette sur desktop. */
   side: "left" | "right";
+  /** Hauteur de l'étiquette (px du rendu). */
   labelY: number;
 };
 
@@ -76,9 +113,9 @@ export const PARTS: readonly Part[] = [
     title: "Module caméra",
     text: "Capteur CMOS 1/1,3 pouce de 12 MP, objectif ultra grand-angle de 155° ouvert à f/2.8, sur nacelle mécanique un axe. Stabilisation RockSteady 3.0+ et HorizonSteady.",
     img: "/assets/avata2/avata2-camera-detail-dark.png",
-    dot: { x: 31.1, y: 50.2 },
+    dot: { x: 390, y: 630 },
     side: "left",
-    labelY: 50,
+    labelY: 630,
   },
   {
     id: "battery",
@@ -86,9 +123,9 @@ export const PARTS: readonly Part[] = [
     title: "Batterie intelligente",
     text: "Li-ion 4S, 2 150 mAh, 14,76 V, 31,7 Wh, environ 145 g. Jusqu’à 23 minutes de vol.",
     img: "/assets/avata2/avata2-battery-removal-dark.png",
-    dot: { x: 61.5, y: 37.5 },
+    dot: { x: 771, y: 470 },
     side: "right",
-    labelY: 33,
+    labelY: 430,
   },
   {
     id: "propulsion",
@@ -96,9 +133,9 @@ export const PARTS: readonly Part[] = [
     title: "Propulsion",
     text: "Quatre moteurs brushless et hélices tripales, protégés par des carénages intégrés au châssis.",
     img: "/assets/avata2/avata2-propulsion-exploded-dark.png",
-    dot: { x: 19.8, y: 32.6 },
+    dot: { x: 248, y: 409 },
     side: "left",
-    labelY: 30,
+    labelY: 380,
   },
   {
     id: "electronics",
@@ -106,9 +143,9 @@ export const PARTS: readonly Part[] = [
     title: "Électronique",
     text: "Carte principale, transmission DJI O4 avec retour vidéo 1080p jusqu’à 100 i/s, GNSS GPS + Galileo + BeiDou, 46 Go de stockage interne et lecteur microSD.",
     img: "/assets/avata2/avata2-electronics-exploded-dark.png",
-    dot: { x: 55.2, y: 52 },
+    dot: { x: 692, y: 652 },
     side: "right",
-    labelY: 56,
+    labelY: 700,
   },
   {
     id: "sensors",
@@ -116,8 +153,13 @@ export const PARTS: readonly Part[] = [
     title: "Capteurs inférieurs",
     text: "Capteur ToF et caméras de positionnement visuel sous le châssis, utilisés pour stabiliser le vol près du sol et en intérieur.",
     img: "/assets/avata2/avata2-underside-sensors-dark.png",
-    dot: { x: 51.8, y: 83.6 },
+    dot: { x: 650, y: 1048 },
     side: "left",
-    labelY: 82,
+    labelY: 1030,
   },
 ] as const;
+
+/** Position (en % de la toile Détails) d'un point du rendu éclaté. */
+export function boundsPct(x: number, y: number) {
+  return { x: ((x - FULL_BOUNDS.left) / BW) * 100, y: ((y - FULL_BOUNDS.top) / BH) * 100 };
+}

@@ -1,26 +1,52 @@
-/* Écran technique de la vue éclatée. Apparition pilotée par GSAP (timeline Détails). */
+/*
+ * Scène Détails : vraie scène dédiée, fixe sous le header. Toutes les tailles sont
+ * dérivées de l'espace réellement disponible (unités de conteneur) : la vue
+ * éclatée est toujours entièrement visible, jamais coupée.
+ */
 
-.ui {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
+.scene {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  container: scene / size;
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+  --top-h: 64px;
+  --lab: clamp(150px, 15cqw, 230px);
 }
 
-.ui > * {
+.scene:not([inert]) {
   pointer-events: auto;
 }
 
-.eyebrow {
-  position: absolute;
-  left: var(--gutter);
-  top: 96px;
+.inner {
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
+  padding: 0 var(--gutter) 24px;
+}
+
+.top {
+  flex: none;
+  height: var(--top-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.eyebrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
 }
 
 .eyebrowTitle {
@@ -30,22 +56,79 @@
   color: var(--fg);
 }
 
-.eyebrowHint {
+.eyebrowHint,
+.backDrone {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+.eyebrowHint {
   color: var(--muted);
 }
 
-/* Toile de la vue éclatée à sa position finale (posée en px par AvataHero). */
-.frame {
+.backDrone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  color: var(--soft);
+  opacity: 0;
+  transition: color 0.3s ease;
+}
+
+.backDrone:hover,
+.backDrone:focus-visible {
+  color: var(--fg);
+  outline: none;
+}
+
+.backDrone:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding-bottom: 16px;
+}
+
+/* Toile = silhouette de la vue éclatée. Débordement visible : rien n'est coupé. */
+.canvas {
+  position: relative;
+  flex: none;
+  width: min(
+    calc(100cqw - 2 * var(--gutter) - 2 * var(--lab)),
+    calc((100cqh - var(--top-h) - 48px) * 1216 / 1184),
+    1100px
+  );
+}
+
+.ghost {
   position: absolute;
   pointer-events: none;
 }
 
-.frame > button {
-  pointer-events: auto;
+.layer {
+  position: absolute;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.layerImg {
+  position: absolute;
+  display: block;
 }
 
 .lines {
@@ -54,6 +137,7 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  pointer-events: none;
 }
 
 .lines line {
@@ -65,9 +149,9 @@
 
 .dot {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -78,15 +162,15 @@
 .dot::before {
   content: "";
   position: absolute;
-  inset: 6px;
+  inset: 7px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 0 5px rgb(234 110 2 / 0.18);
+  box-shadow: 0 0 0 5px rgb(234 110 2 / 0.2);
   transition: box-shadow 0.3s ease;
 }
 
 .dot:hover::before {
-  box-shadow: 0 0 0 8px rgb(234 110 2 / 0.22);
+  box-shadow: 0 0 0 9px rgb(234 110 2 / 0.25);
 }
 
 .dot > span {
@@ -95,30 +179,23 @@
 
 .label {
   position: absolute;
-  transform: translateY(-50%);
-  padding: 6px 0;
-  cursor: pointer;
-  text-align: left;
-}
-
-.labelLeft {
-  right: 103%;
-}
-
-.labelRight {
-  left: 103%;
-}
-
-.labelInner {
   display: inline-flex;
   align-items: baseline;
   gap: 10px;
+  padding: 6px 0;
   white-space: nowrap;
+  cursor: pointer;
+  transform: translateY(-50%);
   opacity: 0;
 }
 
-.labelLeft .labelInner {
+.labelLeft {
+  right: 104%;
   flex-direction: row-reverse;
+}
+
+.labelRight {
+  left: 104%;
 }
 
 .labelIndex {
@@ -153,60 +230,128 @@
   display: none;
 }
 
-.back {
-  position: absolute;
-  top: 22px;
-  right: var(--gutter);
-  z-index: 6;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 4px 0;
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--soft);
-  visibility: hidden;
-  opacity: 0;
+.listButton {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 16px;
+  color: var(--fg);
+  text-align: left;
   transition: color 0.3s ease;
 }
 
-.back:hover,
-.back:focus-visible {
-  color: var(--fg);
+.listButton:hover,
+.listButton:focus-visible {
   outline: none;
+  color: var(--accent);
 }
 
-.back:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 5px;
+.listArrow {
+  color: var(--muted);
 }
 
-/* Panneau de composant */
+/* Écrans étroits ou portrait : points numérotés + liste. */
+@container scene (max-width: 959px) or (orientation: portrait) {
+  .lines,
+  .label {
+    display: none;
+  }
+  .dot > span {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--ink);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .dot::before {
+    display: none;
+  }
+  .list {
+    display: block;
+    border-top: 1px solid var(--line-soft);
+  }
+}
+
+/* Paysage étroit (petite fenêtre, zoom fort) : toile à gauche, liste à droite. */
+@container scene (max-width: 959px) and (orientation: landscape) {
+  .body {
+    gap: clamp(20px, 4cqw, 48px);
+  }
+  .canvas {
+    width: min(58cqw, calc((100cqh - var(--top-h) - 40px) * 1216 / 1184));
+  }
+  .list {
+    flex: 1;
+    max-width: 320px;
+  }
+}
+
+/* Portrait : toile en haut, liste dessous, défilement vertical si nécessaire. */
+@container scene (orientation: portrait) {
+  .top {
+    height: auto;
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px 0 4px;
+  }
+  .body {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 24px;
+  }
+  .canvas {
+    align-self: center;
+    width: min(100%, calc((100cqh - var(--top-h) - 32px) * 0.62 * 1216 / 1184), 760px);
+    margin-top: 8px;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Panneau de composant                                                 */
+/* ------------------------------------------------------------------ */
+
 .part {
-  position: absolute;
-  inset: 0;
-  z-index: 7;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(24px, 4vw, 72px);
-  padding: 96px var(--gutter) 48px;
-  background: rgb(10 10 11 / 0.97);
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgb(10 10 11 / 0.96);
+  container: part / size;
+}
+
+.partGrid {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4cqw, 72px);
+  padding: 24px var(--gutter) 40px;
 }
 
 .partMedia {
   position: relative;
-  width: 100%;
-  max-width: min(64svh, 640px);
-  aspect-ratio: 1;
   justify-self: end;
+  width: min(100%, calc(100cqh - 72px), 720px);
+  aspect-ratio: 1;
 }
 
 .partText {
-  max-width: 420px;
+  max-width: 440px;
 }
 
 .partIndex {
@@ -219,7 +364,7 @@
 
 .partTitle {
   margin-top: 18px;
-  font-size: clamp(32px, 3.6vw, 52px);
+  font-size: clamp(30px, 3.6cqw, 54px);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.035em;
@@ -254,76 +399,28 @@
   outline: none;
 }
 
-@media (max-width: 767px) {
-  .eyebrow {
-    top: 76px;
-  }
-  .lines,
-  .label {
-    display: none;
-  }
-  .dot {
-    width: 24px;
-    height: 24px;
-    margin: -12px 0 0 -12px;
-  }
-  .dot::before {
-    display: none;
-  }
-  .dot > span {
-    display: grid;
-    place-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: var(--ink);
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
-    font-size: 10px;
-    font-weight: 600;
-  }
-  .list {
-    display: block;
-    position: absolute;
-    left: var(--gutter);
-    right: var(--gutter);
-    bottom: max(20px, 3svh);
-    border-top: 1px solid var(--line-soft);
-  }
-  .listButton {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 32px 1fr auto;
-    align-items: baseline;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--line-soft);
-    font-size: 16px;
-    color: var(--fg);
-    text-align: left;
-  }
-  .listButton:focus-visible {
-    outline: none;
-    color: var(--accent);
-  }
-  .listArrow {
-    color: var(--muted);
-  }
-  .part {
+@container part (orientation: portrait) {
+  .partGrid {
     grid-template-columns: 1fr;
     align-items: start;
-    padding: 76px var(--gutter) 40px;
-    gap: 20px;
+    align-content: start;
+    gap: 16px;
+    padding-top: 16px;
   }
   .partMedia {
     justify-self: center;
-    max-width: 100%;
+    width: min(100%, 52cqh);
+  }
+  .partText {
+    max-width: 560px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dot::before,
   .labelText,
-  .back,
+  .backDrone,
+  .listButton,
   .partBack {
     transition: none;
   }
