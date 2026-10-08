@@ -17,7 +17,8 @@
   min-height: 520px;
   overflow: hidden;
   container: hero / size;
-  background: var(--ambient-bg, #0e0e0e);
+  /* Transparent : le monde (WorldCanvas, fixe) est derrière. */
+  background: transparent;
   color: var(--ambient-text, #f5f3ee);
 }
 
@@ -31,16 +32,6 @@
    (rastérisée une fois, puis seulement transformée) — aucun repaint du paysage filtré. */
 .landscape {
   will-change: transform;
-}
-
-.shade {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  will-change: opacity;
-  pointer-events: none;
-  background: var(--ambient-bg, #0e0e0e);
-  opacity: 0;
 }
 
 /* Lisibilité du texte : léger dégradé à gauche, jamais un aplat. */
@@ -58,7 +49,22 @@
 /* Grand nom, derrière les sommets                                     */
 /* ------------------------------------------------------------------ */
 
+/* Même cadrage « cover » que la photo ; le nom n'existe que dans le ciel (derrière les sommets). */
+.brandBox {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, calc(100cqh * 2560 / 1441));
+  aspect-ratio: 2560 / 1441;
+  transform: translate(-50%, -50%);
+  mask-image: url("/environment/master/sky-mask.png");
+  -webkit-mask-image: url("/environment/master/sky-mask.png");
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+}
+
 .brandWrap {
+  filter: var(--scene-filter);
   position: absolute;
   inset: 0;
   container-type: inline-size;
@@ -197,29 +203,12 @@
 /* Setup sur le rocher                                                  */
 /* ------------------------------------------------------------------ */
 
-/* Même caméra que le paysage (dérive lente) : les objets restent posés sur le rocher. */
+/* Calque des objets posés sur le rocher. */
 .productsCam {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  animation: camDrift 38s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes camDrift {
-  from {
-    transform: translate3d(-0.5cqw, 0.25cqh, 0) scale(1.01);
-  }
-  to {
-    transform: translate3d(0.5cqw, -0.25cqh, 0) scale(1.032);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .productsCam {
-    animation: none;
-  }
 }
 
 .products {

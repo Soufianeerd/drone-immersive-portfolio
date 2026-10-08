@@ -101,10 +101,3 @@ html[data-scene-active] [data-site-nav] {
   background: var(--ambient-accent);
   color: var(--ink);
 }
-
-/* Monde vivant : seul le paysage visible anime ses couches (l'autre est mis en pause). */
-[data-world-paused] *,
-[data-world-paused] *::before,
-[data-world-paused] *::after {
-  animation-play-state: paused !important;
-}

@@ -1,0 +1,48 @@
+/* Le monde : un seul calque fixe sous tout le site, même boîte que le hero. */
+
+.world {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100svh;
+  min-height: 520px;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Avant le chargement : la photo (même cadrage), jamais un écran noir. */
+  background: var(--ambient-bg, #0e0e0e) image-set(url("/environment/master/landscape.webp") type("image/webp"), url("/environment/master/landscape.jpg") type("image/jpeg")) center / cover no-repeat;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.canvas[data-ready] {
+  opacity: 1;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  filter: var(--scene-filter);
+}
+
+.weather {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 767px) {
+  .world {
+    background-image: url("/environment/master/landscape-1280.webp");
+  }
+}

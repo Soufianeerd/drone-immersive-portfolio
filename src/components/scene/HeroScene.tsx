@@ -8,8 +8,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { SITE } from "@/config/site";
 import { AVATA_PARTS, SETUP_COPY } from "@/content/setup";
 import type { AvataPartId } from "@/content/setup";
-import Landscape from "@/components/environment/Landscape";
 import { HERO_EXIT } from "@/config/world";
+import { worldCam } from "@/lib/world/camera";
 import {
   BOUNDS_W,
   FULL_ASPECT,
@@ -321,7 +321,8 @@ export default function HeroScene() {
       const others = PRODUCTS.filter((o) => o.id !== p).map((o) => layer(o.id, "focus"));
       const tl = gsap.timeline({ paused: true, defaults: { overwrite: "auto" } });
       tl.to(chrome(), { opacity: 0, y: rm ? 0 : -10, duration: 0.45, stagger: 0.03, ease: "power2.in" }, 0)
-        .to("[data-scene-focus]", { filter: rm ? "brightness(0.55)" : "blur(10px) brightness(0.55)", duration: 1.1, ease: "power2.inOut" }, 0)
+        .to(worldCam, { blur: rm ? 0 : 3.2, dim: 0.45, duration: 1.1, ease: "power2.inOut" }, 0)
+        .to("[data-brand-wrap]", { opacity: 0.25, duration: 0.8, ease: "power2.inOut" }, 0)
         .to(others, { autoAlpha: 0, y: rm ? 0 : 30, scale: 0.94, duration: 0.7, ease: "power2.in" }, 0)
         .to(layer(p, "shadow"), { opacity: 0, duration: 0.4 }, 0);
       if (rm) {
@@ -358,12 +359,14 @@ export default function HeroScene() {
       .to(layer(p, "focus"), { x: 0, y: 0, scale: 1, opacity: 1, duration: rm ? 0.3 : 1.1, ease: "expo.inOut" }, 0.05)
       .to(all.filter((e) => e !== layer(p, "focus")), { autoAlpha: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 0.45)
       .to(layer(p, "shadow"), { opacity: 1, duration: 0.5 }, 0.9)
-      .to("[data-scene-focus]", { filter: "blur(0px) brightness(1)", duration: 1, ease: "power2.inOut" }, 0.1)
+      .to(worldCam, { blur: 0, dim: 0, duration: 1, ease: "power2.inOut" }, 0.1)
+      .to("[data-brand-wrap]", { opacity: 1, duration: 0.8, ease: "power2.inOut" }, 0.2)
       .to(chrome(), { opacity: 1, y: 0, duration: 0.6, stagger: 0.04, ease: "power2.out" }, 0.7);
     if (p === "avata") gsap.delayedCall(0.4, () => setProps(false));
     run(tl, () => {
       gsap.set([...all, pn, ...chrome(), layer(p, "shadow")], { clearProps: "transform,opacity,visibility" });
-      gsap.set("[data-scene-focus]", { clearProps: "filter" });
+      gsap.set(worldCam, { blur: 0, dim: 0 });
+      gsap.set("[data-brand-wrap]", { clearProps: "opacity" });
     });
   }, [chrome, commit, layer, panel, q, run, setProps]);
   useEffect(() => {
@@ -533,7 +536,9 @@ export default function HeroScene() {
       onComplete: () => {
         gsap.killTweensOf(targets);
         gsap.set(targets, { clearProps: "transform,transformOrigin,opacity,visibility,filter" });
-        gsap.set("[data-scene-focus]", { clearProps: "filter" });
+        gsap.killTweensOf(worldCam, "blur,dim");
+        gsap.set(worldCam, { blur: 0, dim: 0 });
+        gsap.set("[data-brand-wrap]", { clearProps: "opacity" });
         hovered.current = null;
         hero.dataset.hover = "";
         busy.current = false;
@@ -570,6 +575,7 @@ export default function HeroScene() {
       } else {
         intro
           .fromTo("[data-landscape-intro]", { scale: 1.06 }, { scale: 1, duration: 2.4, ease: "expo.out", clearProps: "transform" }, 0)
+          .fromTo(worldCam, { intro: 1.06 }, { intro: 1, duration: 2.4, ease: "expo.out" }, 0)
           .fromTo("[data-brand]", { yPercent: 18, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 1.8 }, 0.1)
           .fromTo("[data-line]", { yPercent: 105, opacity: 1 }, { yPercent: 0, duration: 1.1, stagger: 0.08 }, 0.25)
           .to("[data-fade]", { opacity: 1, duration: 0.8, stagger: 0.06, ease: "power2.out" }, 0.5)
@@ -577,30 +583,21 @@ export default function HeroScene() {
           .fromTo("[data-shadow]", { opacity: 0, scaleX: 0.6 }, { opacity: 1, scaleX: 1, duration: 0.9, stagger: 0.1, ease: "power3.out", clearProps: "transform,opacity" }, 0.7);
       }
 
-      // Le paysage du hero s'arrête de vivre une fois sorti du cadre (le monde persistant prend le relais).
-      const land = q("[data-landscape]");
-      if (land)
-        ScrollTrigger.create({
-          trigger: trackRef.current,
-          start: "bottom top",
-          onEnter: () => land.setAttribute("data-world-paused", ""),
-          onLeaveBack: () => land.removeAttribute("data-world-paused"),
-        });
-
       // Hero → Showreel : le rocher et le setup quittent le cadre, le paysage reste un instant.
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         const tl = gsap.timeline({
           defaults: { ease: "none" },
-          // Terminé un peu avant que le hero ne se décroche : le monde persistant (WorldBackdrop)
+          // Terminé un peu avant que le hero ne se décroche : le monde (WorldCanvas)
           // reprend alors exactement le même cadrage et la même lumière → aucune ligne visible.
           scrollTrigger: { trigger: trackRef.current, start: "top top", end: "bottom 112%", scrub: 0.5 },
         });
         tl.to("[data-copy]", { yPercent: -30, opacity: 0, duration: 0.35 }, 0)
           .to("[data-products]", { yPercent: 38, opacity: 0, duration: 0.6 }, 0)
           .to("[data-landscape]", { scale: HERO_EXIT.scale, duration: 1, transformOrigin: HERO_EXIT.origin }, 0)
+          .fromTo(worldCam, { scale: 1, x: 0, y: 0 }, { scale: HERO_EXIT.scale, x: 0, y: 0, duration: 1, immediateRender: false }, 0)
           .to("[data-brand-wrap]", { opacity: 0, duration: 0.7 }, 0.1)
-          .to("[data-hero-shade]", { opacity: HERO_EXIT.shade, duration: 0.7 }, 0.3);
+          .fromTo(worldCam, { shade: 0 }, { shade: HERO_EXIT.shade, duration: 0.7, immediateRender: false }, 0.3);
       });
     }, hero);
     return () => {
@@ -659,20 +656,19 @@ export default function HeroScene() {
         onPointerDown={(e) => (lastPointer.current = e.pointerType)}
         data-mode={mode.m}
       >
-        <div data-landscape className={styles.landscape}>
+        {/* Le paysage vivant est rendu par le monde (WorldCanvas) ; ici, le grand nom glissé
+            derrière les sommets (masque du ciel), sur la même caméra. */}
+        <div data-landscape className={styles.landscape} aria-hidden="true">
           <div data-landscape-intro className={styles.fillAbs}>
-          <Landscape
-            behind={
+            <div className={styles.brandBox}>
               <div data-brand-wrap className={styles.brandWrap}>
                 <p data-brand className={styles.brand}>
                   {SITE.brand}
                 </p>
               </div>
-            }
-          />
+            </div>
           </div>
         </div>
-        <div data-hero-shade className={styles.shade} aria-hidden="true" />
 
         {/* Texte */}
         <div data-copy className={styles.copy} inert={mode.m !== "home"}>

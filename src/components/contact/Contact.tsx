@@ -64,7 +64,7 @@ export default function Contact() {
 
   return (
     <section id="contact" className={styles.section} aria-labelledby="contact-title">
-      {/* Le monde (WorldBackdrop) reste visible derrière : seul un voile de lisibilité. */}
+      {/* Le monde (WorldCanvas) reste visible derrière : seul un voile de lisibilité. */}
       <div className={styles.bg} aria-hidden />
 
       <div className={styles.inner}>

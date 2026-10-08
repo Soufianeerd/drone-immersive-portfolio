@@ -53,7 +53,10 @@ export function themeFor(phase: DayPhase, weather: Weather, season: Season) {
     `sepia(${(p.sepia + s.sepia).toFixed(2)})`,
   ].join(" ");
   const pl = p.productLight * (weather === "clear" ? 1 : 0.92);
-  const product = `brightness(${pl.toFixed(3)}) saturate(${(0.92 * w.saturate + 0.08).toFixed(3)}) hue-rotate(${Math.round((p.hue + s.hue) * 0.5)}deg)`;
+  const ps = 0.92 * w.saturate + 0.08;
+  const ph = Math.round((p.hue + s.hue) * 0.5);
+  // Filtre neutre → « none » : aucun calque filtré inutile sous les animations des objets.
+  const product = Math.abs(pl - 1) < 0.01 && Math.abs(ps - 1) < 0.01 && ph === 0 ? "none" : `brightness(${pl.toFixed(3)}) saturate(${ps.toFixed(3)}) hue-rotate(${ph}deg)`;
   const a = AMBIENT[phase];
   const rainy = weather === "rain" || weather === "cloudy";
   return {
@@ -75,6 +78,53 @@ export function themeFor(phase: DayPhase, weather: Weather, season: Season) {
       "--ambient-shadow": a.shadow,
       "--ambient-overlay": phase === "night" ? "rgb(5 8 18 / 0.55)" : "rgb(10 8 6 / 0.35)",
     } as Record<string, string>,
+  };
+}
+
+/** Teinte de phase en valeurs numériques (mêmes couleurs que les dégradés CSS) pour le rendu WebGL du monde. */
+const TINT_RGB: Record<DayPhase, [number, number, number][]> = {
+  dawn: [[150, 160, 205], [232, 186, 190], [120, 130, 160]],
+  day: [[120, 170, 225], [230, 236, 242], [210, 214, 220]],
+  golden: [[255, 170, 90], [255, 210, 150], [120, 70, 40]],
+  dusk: [[70, 60, 130], [190, 110, 120], [40, 35, 60]],
+  night: [[10, 18, 45], [30, 45, 90], [8, 12, 28]],
+};
+
+export type SceneUniforms = {
+  brightness: number;
+  contrast: number;
+  saturate: number;
+  hue: number;
+  sepia: number;
+  tint: [number, number, number][];
+  tintOpacity: number;
+  tintMultiply: number;
+  veil: number;
+  fog: number;
+  stars: number;
+  bg: [number, number, number];
+};
+
+/** Étalonnage du paysage (même logique que `themeFor`), en nombres pour le shader du monde. */
+export function sceneUniforms(phase: DayPhase, weather: Weather, season: Season): SceneUniforms {
+  const p = PHASE[phase];
+  const w = WEATHER[weather];
+  const s = SEASON[season];
+  const hex = AMBIENT[phase].bg;
+  const bg: [number, number, number] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+  return {
+    brightness: p.brightness * w.brightness,
+    contrast: p.contrast * w.contrast,
+    saturate: p.saturate * w.saturate * s.saturate,
+    hue: p.hue + s.hue,
+    sepia: p.sepia + s.sepia,
+    tint: TINT_RGB[phase].map((c) => c.map((v) => v / 255) as [number, number, number]),
+    tintOpacity: p.tintOpacity,
+    tintMultiply: p.tintBlend === "multiply" ? 1 : 0,
+    veil: w.veil,
+    fog: Math.min(1, p.fog + w.fog),
+    stars: weather === "clear" ? p.stars : p.stars * 0.25,
+    bg,
   };
 }
 
