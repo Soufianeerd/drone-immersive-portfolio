@@ -1,0 +1,755 @@
+/*
+ * Hero — paysage + setup posé sur le rocher.
+ * Paysage (≥ 1,05 de ratio) : les objets vivent dans la même boîte « cover » que
+ * l'image, ils restent donc posés sur le rocher quel que soit le recadrage.
+ * Portrait : composition dédiée en unités du viewport, au niveau du rocher.
+ */
+
+.track {
+  position: relative;
+  height: 200svh;
+}
+
+.hero {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 520px;
+  overflow: hidden;
+  container: hero / size;
+  background: var(--ambient-bg, #0e0e0e);
+  color: var(--ambient-text, #f5f3ee);
+}
+
+.landscape,
+.fillAbs {
+  position: absolute;
+  inset: 0;
+}
+
+/* Performance : chaque couche animée au scroll est composée par le GPU
+   (rastérisée une fois, puis seulement transformée) — aucun repaint du paysage filtré. */
+.landscape {
+  will-change: transform;
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  will-change: opacity;
+  pointer-events: none;
+  background: var(--ambient-bg, #0e0e0e);
+  opacity: 0;
+}
+
+/* Lisibilité du texte : léger dégradé à gauche, jamais un aplat. */
+.landscape::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(8 8 10 / 0.45) 0%, rgb(8 8 10 / 0.12) 38%, transparent 60%),
+    linear-gradient(180deg, rgb(8 8 10 / 0.35) 0%, transparent 16%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Grand nom, derrière les sommets                                     */
+/* ------------------------------------------------------------------ */
+
+.brandWrap {
+  position: absolute;
+  inset: 0;
+  container-type: inline-size;
+  will-change: opacity;
+}
+
+.brand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7%;
+  text-align: center;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: min(15.5cqw, 21vw);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  /* Lettres lumineuses dans le ciel, qui se fondent vers les crêtes (logique « ICELAND / MIRROR »). */
+  background: linear-gradient(180deg, rgb(255 252 246 / 0.92) 0%, rgb(250 244 234 / 0.78) 55%, rgb(245 238 228 / 0.5) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
+  user-select: none;
+}
+
+:global(html[data-phase="night"]) .brand {
+  background-image: linear-gradient(180deg, rgb(225 232 248 / 0.6) 0%, rgb(200 210 235 / 0.42) 100%);
+}
+
+:global(html.js) .brand {
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Texte                                                                */
+/* ------------------------------------------------------------------ */
+
+.copy {
+  position: absolute;
+  z-index: 3;
+  will-change: transform, opacity;
+  left: var(--gutter);
+  top: clamp(180px, 33cqh, 40cqh);
+  max-width: min(52cqw, 860px);
+}
+
+.disciplines {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgb(245 243 238 / 0.82);
+}
+
+.headline {
+  margin-top: clamp(14px, 2.2cqh, 26px);
+  font-size: clamp(34px, min(4.4cqw, 7.6cqh), 72px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.l1,
+.l2 {
+  display: block;
+}
+
+.l1 {
+  color: var(--ambient-text, #f5f3ee);
+}
+
+.l2 {
+  color: color-mix(in oklab, var(--ambient-text, #f5f3ee) 72%, var(--ambient-accent, #e8a453));
+}
+
+:global(html.js) .l1,
+:global(html.js) .l2,
+:global(html.js) .disciplines,
+:global(html.js) .cta {
+  opacity: 0;
+}
+
+.cta {
+  margin-top: clamp(24px, 4cqh, 44px);
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 15px;
+  color: var(--ambient-text, #f5f3ee);
+}
+
+.play {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1px solid rgb(245 243 238 / 0.7);
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease,
+    transform 0.4s ease;
+}
+
+.ctaRule {
+  width: 72px;
+  height: 1px;
+  background: rgb(245 243 238 / 0.55);
+  transform-origin: 0 50%;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cta:hover .play,
+.cta:focus-visible .play {
+  background: var(--ambient-text, #f5f3ee);
+  color: #0e0e0e;
+}
+
+.cta:hover .ctaRule,
+.cta:focus-visible .ctaRule {
+  transform: scaleX(1.4);
+}
+
+.cta:focus-visible {
+  outline: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Setup sur le rocher                                                  */
+/* ------------------------------------------------------------------ */
+
+/* Même caméra que le paysage (dérive lente) : les objets restent posés sur le rocher. */
+.productsCam {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: camDrift 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes camDrift {
+  from {
+    transform: translate3d(-0.5cqw, 0.25cqh, 0) scale(1.01);
+  }
+  to {
+    transform: translate3d(0.5cqw, -0.25cqh, 0) scale(1.032);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productsCam {
+    animation: none;
+  }
+}
+
+.products {
+  pointer-events: auto;
+  --bw: max(100cqw, calc(100cqh * 2560 / 1441));
+  position: absolute;
+  z-index: 2;
+  width: var(--bw);
+  height: calc(var(--bw) * 1441 / 2560);
+  left: calc(50cqw - var(--bw) / 2);
+  top: calc(50cqh - var(--bw) * 1441 / 2560 / 2);
+  filter: var(--product-filter);
+  will-change: transform, opacity;
+}
+
+:global(html.env-ready) .products {
+  transition: filter 5s ease;
+}
+
+.product {
+  position: absolute;
+}
+
+/* Ligne de sol mesurée sur le rocher du master (bas de la silhouette = contact). */
+.goggles {
+  left: 18%;
+  width: 16%;
+  bottom: 14.5%;
+  z-index: 1;
+}
+
+.avata {
+  left: 38%;
+  width: 24%;
+  bottom: 16%;
+  z-index: 2;
+}
+
+.controller {
+  left: 63.5%;
+  width: 16.5%;
+  bottom: 9%;
+  z-index: 3;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.hover {
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+}
+
+.product {
+  perspective: 900px;
+}
+
+.canvas {
+  position: absolute;
+  pointer-events: none;
+}
+
+.active {
+  position: absolute;
+  transform-origin: 0 0;
+  opacity: 0;
+}
+
+/* Ombre de contact : courte, dense, plus une ombre portée douce vers la caméra. */
+.shadow {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -5%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.85) 0%, rgb(0 0 0 / 0.45) 55%, transparent 100%);
+  transform-origin: 50% 50%;
+}
+
+.shadow::after {
+  content: "";
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: 10%;
+  height: 160%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.35), transparent 75%);
+}
+
+.hit {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hit:focus {
+  outline: none;
+}
+
+.hit:focus-visible::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 12px);
+  bottom: -18px;
+  width: 24px;
+  height: 2px;
+  background: var(--ambient-accent, #e8a453);
+}
+
+.name {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 18px);
+  width: max-content;
+  translate: -50% 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ambient-text, #f5f3ee);
+  text-shadow: 0 1px 12px rgb(0 0 0 / 0.6);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fiche produit                                                        */
+/* ------------------------------------------------------------------ */
+
+.panel {
+  position: absolute;
+  z-index: 6;
+  top: var(--header-h);
+  bottom: 0;
+  left: 56%;
+  right: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 0 40px;
+  overflow-y: auto;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.pLabel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(245 243 238 / 0.75);
+}
+
+.pRule {
+  display: inline-block;
+  width: 32px;
+  height: 1px;
+  background: var(--ambient-accent, #e8a453);
+}
+
+.pTitle {
+  margin-top: 22px;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(22px, 2.3cqw, 38px);
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.pHook {
+  margin-top: 18px;
+  font-size: clamp(30px, 3.4cqw, 54px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: color-mix(in oklab, var(--ambient-text, #f5f3ee) 80%, var(--ambient-accent, #e8a453));
+}
+
+.pText {
+  margin-top: 22px;
+  max-width: 44ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgb(245 243 238 / 0.78);
+  text-wrap: pretty;
+}
+
+.pAction {
+  margin-top: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgb(245 243 238 / 0.4);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ambient-text, #f5f3ee);
+  transition: border-color 0.3s ease;
+}
+
+.pAction:hover,
+.pAction:focus-visible {
+  border-bottom-color: var(--ambient-accent, #e8a453);
+  outline: none;
+}
+
+.back {
+  position: absolute;
+  z-index: 8;
+  left: var(--gutter);
+  top: calc(var(--header-h) + 14px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ambient-text, #f5f3ee);
+  visibility: hidden;
+  opacity: 0;
+}
+
+.back:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Avata — vue éclatée                                                  */
+/* ------------------------------------------------------------------ */
+
+.explore {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.explore:not([inert]) {
+  pointer-events: auto;
+}
+
+.xStage {
+  position: absolute;
+  left: var(--gutter);
+  top: calc(var(--header-h) + 64px);
+  bottom: 48px;
+  width: calc(58% - var(--gutter));
+  container: xstage / size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xCanvas {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 1216 / 1184));
+}
+
+.ghost {
+  position: absolute;
+  pointer-events: none;
+}
+
+.xLayer {
+  position: absolute;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xLayerImg {
+  position: absolute;
+  display: block;
+}
+
+.xDot {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgb(14 14 14 / 0.7);
+  border: 1px solid var(--ambient-accent, #e8a453);
+  color: var(--ambient-text, #f5f3ee);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease;
+}
+
+.xDot:hover,
+.xDotOn {
+  background: var(--ambient-accent, #e8a453);
+  color: #0e0e0e;
+}
+
+.xPanel {
+  position: absolute;
+  left: 62%;
+  right: var(--gutter);
+  top: var(--header-h);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 0 40px;
+  overflow-y: auto;
+}
+
+.xIntro {
+  margin-top: 14px;
+}
+
+.xHead {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(22px, 2.3cqw, 38px);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.xHookBig {
+  margin-top: 10px;
+  font-size: clamp(20px, 1.9cqw, 30px);
+  letter-spacing: -0.02em;
+  color: var(--ambient-text);
+}
+
+.xLede {
+  margin-top: 12px;
+  max-width: 46ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgb(245 243 238 / 0.72);
+}
+
+.xList {
+  margin-top: 28px;
+  border-top: 1px solid rgb(245 243 238 / 0.18);
+}
+
+.xItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas:
+    "num name"
+    ". hook";
+  row-gap: 4px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgb(245 243 238 / 0.18);
+  text-align: left;
+  color: var(--ambient-text, #f5f3ee);
+  transition: color 0.3s ease;
+}
+
+.xItem:hover,
+.xItem:focus-visible {
+  outline: none;
+  color: var(--ambient-accent, #e8a453);
+}
+
+.xNum {
+  grid-area: num;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--ambient-accent, #e8a453);
+  padding-top: 0.45em;
+}
+
+.xName {
+  grid-area: name;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.xHook {
+  grid-area: hook;
+  font-size: 15px;
+  color: rgb(245 243 238 / 0.7);
+}
+
+.xDetail {
+  margin-top: 26px;
+}
+
+.xIndex {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--ambient-accent, #e8a453);
+}
+
+.xTitle {
+  margin-top: 10px;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(22px, 2.3cqw, 36px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.xTech {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(245 243 238 / 0.16);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(245 243 238 / 0.6);
+}
+
+/* ------------------------------------------------------------------ */
+/* Portrait                                                             */
+/* ------------------------------------------------------------------ */
+
+@container hero (aspect-ratio < 1.05) {
+  .brand {
+    top: 11%;
+  }
+  .copy {
+    top: calc(var(--header-h) + 18cqh);
+    right: var(--gutter);
+    max-width: none;
+  }
+  .headline {
+    font-size: clamp(30px, 8.6cqw, 56px);
+  }
+  .disciplines {
+    letter-spacing: 0.3em;
+  }
+  .products {
+    inset: 0;
+    width: auto;
+    height: auto;
+    left: 0;
+    top: 0;
+  }
+  .goggles {
+    left: 2%;
+    width: 41%;
+    bottom: 25%;
+  }
+  .controller {
+    left: 58%;
+    width: 40%;
+    bottom: 23.5%;
+    z-index: 1;
+  }
+  .avata {
+    left: 17%;
+    width: 66%;
+    bottom: 6%;
+    z-index: 3;
+  }
+  .panel {
+    left: var(--gutter);
+    top: calc(var(--header-h) + 56px + 36cqh);
+    justify-content: flex-start;
+    padding-top: 8px;
+  }
+  .xStage {
+    width: auto;
+    right: var(--gutter);
+    top: calc(var(--header-h) + 56px);
+    bottom: auto;
+    height: 40cqh;
+  }
+  .xPanel {
+    left: var(--gutter);
+    top: calc(var(--header-h) + 56px + 40cqh);
+    bottom: 0;
+    justify-content: flex-start;
+    padding-bottom: 24px;
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play,
+  .ctaRule,
+  .xDot {
+    transition: none;
+  }
+}
+
+/* Vues du turntable : posées au sol, centrées, invisibles au repos. */
+.ttFrame {
+  position: absolute;
+  bottom: 0;
+  height: auto;
+  max-width: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}

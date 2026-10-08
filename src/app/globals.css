@@ -14,6 +14,22 @@
   --gutter: clamp(20px, 3.2vw, 44px);
   --accent: #ea6e02; /* orange des protections du DJI Avata 2 */
   --header-h: 72px;
+
+  /* Marque NADRA */
+  --charcoal: #0e0e0e;
+  --olive: #4a5a46;
+  --stone: #c9c2b5;
+  --sand: #f5f3ee;
+
+  /* Ambiance par défaut (golden hour) — remplacée par l'Environment Engine */
+  --ambient-bg: #0e0e0e;
+  --ambient-surface: #171513;
+  --ambient-text: #f5f3ee;
+  --ambient-muted: #c9c2b5;
+  --ambient-accent: #e8a453;
+  --ambient-warmth: 0.85;
+  --ambient-shadow: rgb(20 8 0 / 0.6);
+  --ambient-overlay: rgb(14 14 14 / 0.55);
 }
 
 @media (max-width: 767px) {
@@ -36,19 +52,28 @@
 
 html {
   color-scheme: dark;
-  background: var(--ink);
+  background: var(--ambient-bg);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
+html.env-ready,
+html.env-ready body {
+  transition: background-color 5s ease, color 5s ease;
+}
+
+/* Lenis (défilement inertiel) */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
 }
 
 body {
   overflow-x: clip;
-  background: var(--ink);
-  color: var(--fg);
+  background: var(--ambient-bg);
+  color: var(--ambient-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -59,7 +84,27 @@ html.js [data-reveal] {
   opacity: 0;
 }
 
+/* Focus produit ouvert : la navigation s’efface, le logo reste (réinitialisation). */
+html[data-scene-active] [data-site-nav] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.env-ready,
+  html.env-ready body {
+    transition: none;
+  }
+}
+
 ::selection {
-  background: var(--accent);
+  background: var(--ambient-accent);
   color: var(--ink);
+}
+
+/* Monde vivant : seul le paysage visible anime ses couches (l'autre est mis en pause). */
+[data-world-paused] *,
+[data-world-paused] *::before,
+[data-world-paused] *::after {
+  animation-play-state: paused !important;
 }

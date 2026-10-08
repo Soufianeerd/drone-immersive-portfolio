@@ -1,3 +1,5 @@
+/* Header éditorial : une ligne, aucune boîte. Transparent sur le hero, plein ensuite. */
+
 .header {
   position: fixed;
   inset: 0 0 auto 0;
@@ -7,38 +9,50 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  pointer-events: none;
   border-bottom: 1px solid transparent;
   transition:
     background-color 0.5s ease,
     border-color 0.5s ease;
 }
 
-.scrolled {
-  background-color: var(--ink);
+.solid {
+  background-color: color-mix(in srgb, var(--ambient-bg) 94%, transparent);
   border-bottom-color: var(--line-soft);
 }
 
-.brand,
-.link {
-  pointer-events: auto;
+.nav {
+  transition: opacity 0.5s ease;
 }
 
 .brand {
   position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 5px;
   padding: 8px 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--fg);
-  /* compense l'espacement final pour un alignement optique */
-  margin-right: -0.32em;
+  color: var(--ambient-text);
   transition: opacity 0.3s ease;
 }
 
+.wordmark {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.32em;
+}
+
+.sub {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 8.5px;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ambient-muted);
+  opacity: 0.8;
+}
+
 .brand:hover {
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
 .brand:focus-visible {
@@ -48,16 +62,20 @@
   text-underline-offset: 6px;
 }
 
-.nav {
-  transition: opacity 0.45s ease;
+.nav ul {
+  display: flex;
+  gap: clamp(20px, 2.6vw, 44px);
 }
 
 .link {
   position: relative;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  color: var(--soft);
-  padding: 6px 0;
+  display: block;
+  padding: 8px 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ambient-text) 72%, transparent);
   transition: color 0.3s ease;
 }
 
@@ -65,8 +83,8 @@
   content: "";
   position: absolute;
   left: 0;
-  right: 0;
-  bottom: 0;
+  right: 0.18em;
+  bottom: 2px;
   height: 1px;
   background: currentColor;
   transform: scaleX(0);
@@ -75,8 +93,9 @@
 }
 
 .link:hover,
-.link:focus-visible {
-  color: var(--fg);
+.link:focus-visible,
+.link[aria-current] {
+  color: var(--ambient-text);
   outline: none;
 }
 
@@ -86,17 +105,86 @@
   transform-origin: 0 50%;
 }
 
-/* Pendant le focus / les détails de l'Avata, la navigation laisse la place aux contrôles de la scène. */
-:global(html[data-hero-focus]) .nav {
-  opacity: 0;
-  pointer-events: none;
-  visibility: hidden;
+.link[aria-current]::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--ambient-accent);
+}
+
+.menuBtn {
+  display: none;
+  position: relative;
+  z-index: 2;
+  padding: 8px 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+.menuBtn:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  padding: calc(var(--header-h) + 24px) var(--gutter) 40px;
+  background: var(--ambient-bg);
+}
+
+.sheet[hidden] {
+  display: none;
+}
+
+.sheet ol {
+  width: 100%;
+}
+
+.sheetLink {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(24px, 7.4vw, 40px);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ambient-text);
+}
+
+.sheetLink:focus-visible {
+  outline: none;
+  color: var(--ambient-accent);
+}
+
+@media (max-width: 767px) {
+  .nav {
+    display: none;
+  }
+  .menuBtn {
+    display: block;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .header,
-  .nav,
   .brand,
+  .link,
   .link::after {
     transition: none;
   }

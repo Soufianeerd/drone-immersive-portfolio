@@ -1,0 +1,358 @@
+/* PORTFOLIO — grille éditoriale. Les médias ne reçoivent jamais l'étalonnage d'ambiance. */
+
+.section {
+  position: relative;
+  z-index: 5;
+  padding: clamp(110px, 18svh, 220px) var(--gutter) clamp(120px, 18svh, 220px);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ambient-bg) 30%, transparent), color-mix(in srgb, var(--ambient-bg) 50%, transparent) 50%, color-mix(in srgb, var(--ambient-bg) 30%, transparent));
+  color: var(--ambient-text);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.55fr);
+  align-items: end;
+  gap: clamp(20px, 4vw, 64px);
+  margin-bottom: clamp(36px, 6svh, 72px);
+}
+
+.title {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(34px, 7vw, 132px);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.mask {
+  display: block;
+  overflow: hidden;
+  padding: 0.06em 0;
+  margin: -0.06em 0;
+}
+
+.word {
+  display: block;
+}
+
+.lede {
+  max-width: 34ch;
+  padding-bottom: 0.6em;
+  font-size: clamp(15px, 1.15vw, 18px);
+  line-height: 1.55;
+  color: var(--ambient-muted);
+  text-wrap: pretty;
+}
+
+/* Filtres : une ligne typographique, pas de « pilules ». */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px clamp(18px, 2.4vw, 36px);
+  padding: 18px 0;
+  margin-bottom: clamp(32px, 6svh, 64px);
+  border-top: 1px solid color-mix(in srgb, var(--ambient-text) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ambient-text) 14%, transparent);
+}
+
+.filter {
+  position: relative;
+  padding: 6px 0;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ambient-text) 58%, transparent);
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.filter sup {
+  margin-left: 4px;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--ambient-text) 38%, transparent);
+}
+
+.filter::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ambient-accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.filter:hover,
+.filter:focus-visible,
+.filter[aria-pressed="true"] {
+  color: var(--ambient-text);
+  outline: none;
+}
+
+.filter[aria-pressed="true"]::after,
+.filter:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.filter:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Grille 12 colonnes, formats variables, remplissage dense. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  align-items: start;
+  gap: clamp(40px, 7svh, 96px) clamp(14px, 1.8vw, 28px);
+}
+
+.item {
+  position: relative;
+  display: block;
+  min-width: 0;
+  color: inherit;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item {
+    cursor: none;
+  }
+}
+
+.wide {
+  grid-column: span 12;
+}
+.landscape {
+  grid-column: span 7;
+}
+.portrait {
+  grid-column: span 5;
+}
+.tall {
+  grid-column: span 4;
+}
+.square {
+  grid-column: span 4;
+}
+
+/* Rythme : décalages verticaux sur les petits formats. */
+.portrait:nth-child(4n + 2),
+.tall:nth-child(odd) {
+  margin-top: clamp(30px, 10svh, 140px);
+}
+
+.frame {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--ambient-surface);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wide .frame {
+  aspect-ratio: 21 / 9;
+}
+.landscape .frame {
+  aspect-ratio: 3 / 2;
+}
+.portrait .frame {
+  aspect-ratio: 4 / 5;
+}
+.tall .frame {
+  aspect-ratio: 9 / 16;
+  max-height: 86svh;
+}
+.square .frame {
+  aspect-ratio: 1;
+}
+
+.media,
+.slotFill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.item:hover .frame,
+.item:focus-visible .frame {
+  clip-path: inset(2.2% 1.6% 2.2% 1.6%);
+}
+
+.item:hover .media,
+.item:hover .slotFill,
+.item:focus-visible .media {
+  transform: scale(1.06);
+}
+
+.item:focus-visible {
+  outline: none;
+}
+
+.item:focus-visible .cTitle {
+  text-decoration: underline;
+  text-decoration-color: var(--ambient-accent);
+  text-underline-offset: 6px;
+}
+
+/* Emplacement réservé : neutre, sans image inventée. */
+.slotFill {
+  background:
+    radial-gradient(90% 70% at 30% 30%, color-mix(in srgb, var(--olive) 32%, transparent) 0%, transparent 70%),
+    radial-gradient(80% 80% at 80% 90%, color-mix(in srgb, var(--ambient-accent) 10%, transparent) 0%, transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--ambient-surface) 100%, #fff 3%) 0%, var(--ambient-surface) 100%);
+}
+
+.mark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 0 solid color-mix(in srgb, var(--ambient-text) 30%, transparent);
+}
+
+.tl {
+  left: 16px;
+  top: 16px;
+  border-left-width: 1px;
+  border-top-width: 1px;
+}
+
+.br {
+  right: 16px;
+  bottom: 16px;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 20px;
+  padding-top: 16px;
+}
+
+.cTitle {
+  font-size: clamp(17px, 1.5vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.slot .cTitle {
+  color: color-mix(in srgb, var(--ambient-text) 62%, transparent);
+}
+
+.cMeta {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ambient-text) 48%, transparent);
+}
+
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sand);
+  color: var(--charcoal);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cursor {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .landscape,
+  .portrait {
+    grid-column: span 6;
+  }
+  .tall,
+  .square {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 767px) {
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-left: calc(var(--gutter) * -1);
+    margin-right: calc(var(--gutter) * -1);
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filters li {
+    flex: none;
+  }
+  .grid {
+    gap: 36px 12px;
+  }
+  .wide,
+  .landscape {
+    grid-column: span 12;
+  }
+  .portrait,
+  .tall,
+  .square {
+    grid-column: span 6;
+  }
+  .wide .frame {
+    aspect-ratio: 16 / 10;
+  }
+  .portrait:nth-child(4n + 2),
+  .tall:nth-child(odd) {
+    margin-top: 0;
+  }
+  .caption {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .media,
+  .slotFill {
+    transition: none;
+  }
+  .item:hover .media,
+  .item:hover .slotFill {
+    transform: none;
+  }
+}

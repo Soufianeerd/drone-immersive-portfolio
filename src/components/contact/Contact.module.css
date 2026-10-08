@@ -1,0 +1,247 @@
+.section {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  overflow: hidden;
+  background: transparent;
+  color: var(--ambient-text);
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--ambient-bg) 30%, transparent) 0%, transparent 35%, color-mix(in srgb, var(--ambient-bg) 40%, transparent) 75%, color-mix(in srgb, var(--ambient-bg) 85%, transparent) 100%);
+}
+
+.inner {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  align-items: center;
+  gap: clamp(36px, 6vw, 110px);
+  padding: clamp(110px, 18svh, 200px) var(--gutter) clamp(60px, 10svh, 120px);
+}
+
+.title {
+  display: grid;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(24px, 3.9vw, 76px);
+  white-space: nowrap;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.title span:last-child {
+  color: color-mix(in srgb, var(--ambient-text) 62%, transparent);
+}
+
+.form {
+  display: grid;
+  gap: 22px;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field > span {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ambient-text) 55%, transparent);
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 10px 0 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ambient-text) 26%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ambient-text);
+  font: inherit;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.field select {
+  appearance: none;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(-45deg, transparent 50%, currentColor 50%);
+  background-position:
+    calc(100% - 9px) 55%,
+    calc(100% - 4px) 55%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.field select option {
+  background: var(--ambient-surface);
+  color: var(--ambient-text);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-bottom-color: var(--ambient-accent);
+}
+
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 28px;
+  padding-top: 6px;
+}
+
+.send {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 26px;
+  border: 1px solid color-mix(in srgb, var(--ambient-text) 40%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ambient-text);
+  cursor: pointer;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.send span {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.send:hover,
+.send:focus-visible {
+  background: var(--sand);
+  border-color: var(--sand);
+  color: var(--charcoal);
+  outline: none;
+}
+
+.send:hover span {
+  transform: translateX(5px);
+}
+
+.send:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.status {
+  flex: 1 1 220px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ambient-text) 70%, transparent);
+}
+
+.status[data-status="sent"] {
+  color: var(--ambient-text);
+}
+
+.status[data-status="not_configured"],
+.status[data-status="error"],
+.status[data-status="invalid"] {
+  color: var(--ambient-accent);
+}
+
+.footer {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 32px;
+  padding: 24px var(--gutter) 28px;
+  border-top: 1px solid color-mix(in srgb, var(--ambient-text) 12%, transparent);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ambient-text) 55%, transparent);
+}
+
+.brand {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: var(--ambient-text);
+}
+
+.footer > span:last-child {
+  margin-left: auto;
+}
+
+.links {
+  display: flex;
+  gap: 24px;
+}
+
+.links a:hover,
+.links a:focus-visible {
+  color: var(--ambient-text);
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .send,
+  .send span,
+  .field input,
+  .field select,
+  .field textarea {
+    transition: none;
+  }
+}
