@@ -44,16 +44,24 @@ export const TURNTABLE: Partial<Record<ProductKey, TurnConfig>> = {
       { src: "/assets/turntable/real/avata-face.webp", angle: 360, w: 114.2, x: 2.47 },
     ],
   },
-  // Deux angles réels seulement : orbite lente repos ↔ trois-quarts droit.
+  // Trois orientations réelles (IMG_3286-3289) : repos (3/4 gauche) → 3/4 droit → arrière / dessus, puis retour.
+  // La vue intérieure (lentilles) est exclue : raccord physiquement absurde dans une orbite extérieure.
   goggles: {
     mode: "orbit",
-    cycle: 5,
-    frames: [{ src: "/assets/turntable/real/goggles-3q-droit.webp", angle: 120, w: 107.69, x: -5.37 }],
+    cycle: 6.5,
+    frames: [
+      { src: "/assets/turntable/real/goggles-3q-droit.webp", angle: 120, w: 107.69, x: -5.37 },
+      { src: "/assets/turntable/real/goggles-arriere-dessus.webp", angle: 180, w: 94.8, x: -1.48 },
+    ],
   },
+  // Trois orientations réelles (IMG_3290-3292) : gauche (repos) ↔ dessus ↔ droite. Aucun dos inventé.
   controller: {
     mode: "orbit",
-    cycle: 5,
-    frames: [{ src: "/assets/turntable/real/controller-3q-droit.webp", angle: 150, w: 100.95, x: 1.3 }],
+    cycle: 6.5,
+    frames: [
+      { src: "/assets/turntable/real/controller-dessus.webp", angle: 90, w: 79.12, x: 1.54 },
+      { src: "/assets/turntable/real/controller-3q-droit.webp", angle: 150, w: 100.95, x: 1.3 },
+    ],
   },
 };
 
@@ -122,8 +130,8 @@ export class ProductTurntable {
   private tick = (_t: number, dtMs: number) => {
     const dt = Math.min(dtMs, 50) / 1000;
     if (this.settle) return;
-    // Accélère en ~0,6 s, décélère en ~0,7 s (rampe linéaire de vitesse).
-    const ramp = this.target > this.speed ? dt / 0.6 : -dt / 0.7;
+    // Accélère en ~0,8 s, décélère en ~0,95 s (jamais d'arrêt net).
+    const ramp = this.target > this.speed ? dt / 0.8 : -dt / 0.95;
     this.speed = Math.min(1, Math.max(0, this.speed + ramp));
     const segs = this.path.length - 1;
     this.pos = (this.pos + (this.speed * dt) / this.seg) % segs;
@@ -147,16 +155,23 @@ export class ProductTurntable {
         this.draw();
       },
       onComplete: () => {
-        const view = this.path[end % segs];
-        if (view === 0) return this.done();
-        // Vue réelle atteinte ; relais lent vers la vue de repos.
-        const back = { t: 0 };
+        const e = end % segs;
+        if (this.path[e] === 0) return this.done();
+        // Vue réelle atteinte ; retour à la vue de repos EN REPASSANT par les vraies vues,
+        // par le chemin le plus court (jamais de saut d'angle direct).
+        const forward = segs - e;
+        const target = forward < e ? segs : 0;
+        const dist = Math.abs(target - e);
+        const back = { p: e };
         this.settle = gsap.to(back, {
-          t: 1,
-          duration: 0.9,
-          delay: 0.15,
+          p: target,
+          duration: Math.min(2.6, Math.max(1, dist * this.seg * 0.6)),
+          delay: 0.12,
           ease: "sine.inOut",
-          onUpdate: () => this.render(view, 0, back.t, 1),
+          onUpdate: () => {
+            this.pos = back.p;
+            this.draw();
+          },
           onComplete: () => this.done(),
         });
       },
@@ -187,7 +202,8 @@ export class ProductTurntable {
    * sur une fenêtre courte, quand les deux vues sont au même angle apparent.
    */
   private render(a: number, b: number, f: number, dir: number) {
-    const s = smooth(0.4, 0.6, f);
+    // Relais court, au moment où les deux vues sont au même angle apparent (milieu du secteur).
+    const s = smooth(0.43, 0.57, f);
     for (let i = 0; i < this.layers.length; i++) {
       const el = this.layers[i];
       if (i !== a && i !== b) {
