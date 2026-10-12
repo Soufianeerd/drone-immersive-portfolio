@@ -1,3 +1,4 @@
+import type { Solar } from "./solar";
 import type { DayPhase, Season, Weather } from "./types";
 
 /**
@@ -17,13 +18,16 @@ const PHASE: Record<DayPhase, Grade & { tint: string; tintOpacity: number; tintB
   night: { brightness: 0.56, contrast: 1.1, saturate: 0.55, hue: -32, sepia: 0, tint: "linear-gradient(180deg, rgb(10 18 45) 0%, rgb(30 45 90) 55%, rgb(8 12 28) 100%)", tintOpacity: 0.5, tintBlend: "multiply", stars: 1, fog: 0.22, productLight: 0.72 },
 };
 
-const WEATHER: Record<Weather, { brightness: number; saturate: number; contrast: number; veil: number; fog: number }> = {
-  clear: { brightness: 1, saturate: 1, contrast: 1, veil: 0, fog: 0 },
-  cloudy: { brightness: 0.92, saturate: 0.82, contrast: 0.97, veil: 0.22, fog: 0.15 },
-  rain: { brightness: 0.82, saturate: 0.7, contrast: 1.06, veil: 0.32, fog: 0.25 },
-  fog: { brightness: 0.95, saturate: 0.72, contrast: 0.9, veil: 0.18, fog: 0.85 },
-  snow: { brightness: 1.02, saturate: 0.78, contrast: 0.96, veil: 0.2, fog: 0.35 },
+const WEATHER: Record<Weather, { brightness: number; saturate: number; contrast: number; veil: number; fog: number; sun: number }> = {
+  clear: { brightness: 1, saturate: 1, contrast: 1.03, veil: 0, fog: 0, sun: 1 },
+  cloudy: { brightness: 0.88, saturate: 0.72, contrast: 0.9, veil: 0.34, fog: 0.18, sun: 0.35 },
+  rain: { brightness: 0.74, saturate: 0.56, contrast: 0.96, veil: 0.48, fog: 0.32, sun: 0.15 },
+  fog: { brightness: 0.96, saturate: 0.62, contrast: 0.78, veil: 0.24, fog: 1, sun: 0.3 },
+  snow: { brightness: 1.0, saturate: 0.68, contrast: 0.9, veil: 0.26, fog: 0.4, sun: 0.4 },
 };
+
+/** Part de lumière solaire directe selon la météo (halo, lumière rasante). */
+export const weatherSun = (w: Weather) => WEATHER[w].sun;
 
 const SEASON: Record<Season, { hue: number; sepia: number; saturate: number }> = {
   spring: { hue: 2, sepia: 0, saturate: 1.04 },
@@ -41,7 +45,7 @@ const AMBIENT: Record<DayPhase, { bg: string; surface: string; text: string; mut
   night: { bg: "#0a0c11", surface: "#12151c", text: "#eef0f4", muted: "#a9b1c0", accent: "#9fb6da", warmth: 0.1, shadow: "rgb(0 5 20 / 0.7)" },
 };
 
-export function themeFor(phase: DayPhase, weather: Weather, season: Season) {
+export function themeFor(phase: DayPhase, weather: Weather, season: Season, solar?: Solar) {
   const p = PHASE[phase];
   const w = WEATHER[weather];
   const s = SEASON[season];
@@ -52,7 +56,8 @@ export function themeFor(phase: DayPhase, weather: Weather, season: Season) {
     `hue-rotate(${p.hue + s.hue}deg)`,
     `sepia(${(p.sepia + s.sepia).toFixed(2)})`,
   ].join(" ");
-  const pl = p.productLight * (weather === "clear" ? 1 : 0.92);
+  // Lumière sur les produits : suit la course réelle du soleil (continue), sinon la phase.
+  const pl = (solar ? 0.72 + 0.32 * solar.intensity : p.productLight) * (weather === "clear" ? 1 : 0.92);
   const ps = 0.92 * w.saturate + 0.08;
   const ph = Math.round((p.hue + s.hue) * 0.5);
   // Filtre neutre → « none » : aucun calque filtré inutile sous les animations des objets.
@@ -124,6 +129,78 @@ export function sceneUniforms(phase: DayPhase, weather: Weather, season: Season)
     veil: w.veil,
     fog: Math.min(1, p.fog + w.fog),
     stars: weather === "clear" ? p.stars : p.stars * 0.25,
+    bg,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Étalonnage continu du monde (course solaire réelle)                  */
+/* ------------------------------------------------------------------ */
+
+type Key = { el: number; brightness: number; contrast: number; saturate: number; hue: number; tint: [number, number, number][]; tintOpacity: number; tintMultiply: number; stars: number; fog: number };
+
+/** Images clés par élévation du soleil. Matin et soir ont leurs propres couleurs. */
+const MORNING: Key[] = [
+  { el: -18, brightness: 0.5, contrast: 1.1, saturate: 0.5, hue: -32, tint: TINT_RGB.night, tintOpacity: 0.55, tintMultiply: 1, stars: 1, fog: 0.22 },
+  { el: -6, brightness: 0.7, contrast: 1.02, saturate: 0.7, hue: -20, tint: [[90, 100, 160], [210, 160, 180], [70, 75, 110]], tintOpacity: 0.42, tintMultiply: 1, stars: 0.35, fog: 0.5 },
+  { el: 0, brightness: 0.88, contrast: 0.97, saturate: 0.8, hue: -12, tint: TINT_RGB.dawn, tintOpacity: 0.3, tintMultiply: 0, stars: 0, fog: 0.55 },
+  { el: 8, brightness: 0.98, contrast: 1.0, saturate: 0.92, hue: -4, tint: [[255, 196, 150], [250, 226, 200], [150, 120, 100]], tintOpacity: 0.18, tintMultiply: 0, stars: 0, fog: 0.32 },
+  { el: 25, brightness: 1.03, contrast: 1.05, saturate: 0.95, hue: -6, tint: TINT_RGB.day, tintOpacity: 0.18, tintMultiply: 0, stars: 0, fog: 0.1 },
+  { el: 60, brightness: 1.05, contrast: 1.06, saturate: 0.92, hue: -8, tint: TINT_RGB.day, tintOpacity: 0.22, tintMultiply: 0, stars: 0, fog: 0.08 },
+];
+const EVENING: Key[] = [
+  { el: -18, brightness: 0.5, contrast: 1.1, saturate: 0.5, hue: -32, tint: TINT_RGB.night, tintOpacity: 0.55, tintMultiply: 1, stars: 1, fog: 0.22 },
+  { el: -6, brightness: 0.66, contrast: 1.05, saturate: 0.8, hue: -24, tint: TINT_RGB.dusk, tintOpacity: 0.46, tintMultiply: 1, stars: 0.3, fog: 0.3 },
+  { el: 0, brightness: 0.86, contrast: 1.04, saturate: 0.98, hue: -6, tint: [[230, 120, 90], [250, 170, 130], [90, 55, 50]], tintOpacity: 0.26, tintMultiply: 0, stars: 0, fog: 0.24 },
+  { el: 7, brightness: 1.0, contrast: 1.02, saturate: 1.06, hue: 0, tint: TINT_RGB.golden, tintOpacity: 0.16, tintMultiply: 0, stars: 0, fog: 0.2 },
+  { el: 25, brightness: 1.03, contrast: 1.05, saturate: 0.98, hue: -4, tint: [[200, 200, 210], [240, 236, 228], [200, 196, 190]], tintOpacity: 0.14, tintMultiply: 0, stars: 0, fog: 0.1 },
+  { el: 60, brightness: 1.05, contrast: 1.06, saturate: 0.92, hue: -8, tint: TINT_RGB.day, tintOpacity: 0.22, tintMultiply: 0, stars: 0, fog: 0.08 },
+];
+
+function sample(keys: Key[], el: number) {
+  const e = Math.min(keys[keys.length - 1].el, Math.max(keys[0].el, el));
+  let i = 0;
+  while (i < keys.length - 2 && e > keys[i + 1].el) i++;
+  const a = keys[i];
+  const b = keys[i + 1];
+  const k = (e - a.el) / (b.el - a.el);
+  const l = (x: number, y: number) => x + (y - x) * k;
+  return {
+    brightness: l(a.brightness, b.brightness),
+    contrast: l(a.contrast, b.contrast),
+    saturate: l(a.saturate, b.saturate),
+    hue: l(a.hue, b.hue),
+    tint: a.tint.map((c, j) => c.map((v, m) => l(v, b.tint[j][m]) / 255)) as [number, number, number][],
+    tintOpacity: l(a.tintOpacity, b.tintOpacity),
+    tintMultiply: l(a.tintMultiply, b.tintMultiply),
+    stars: l(a.stars, b.stars),
+    fog: l(a.fog, b.fog),
+  };
+}
+
+/**
+ * Étalonnage du monde piloté par la position RÉELLE du soleil (continu : 6 h 20 ≠ 8 h ≠ midi ≠ 17 h),
+ * puis météo et saison. Une phase forcée par paramètre de test (?phase=) reste prioritaire.
+ */
+export function worldUniforms(phase: DayPhase, weather: Weather, season: Season, solar: Solar, forcedPhase: boolean): SceneUniforms {
+  if (forcedPhase) return sceneUniforms(phase, weather, season);
+  const w = WEATHER[weather];
+  const s = SEASON[season];
+  const g = sample(solar.progress < 0.5 ? MORNING : EVENING, solar.elevation);
+  const hex = AMBIENT[phase].bg;
+  const bg: [number, number, number] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+  return {
+    brightness: g.brightness * w.brightness,
+    contrast: g.contrast * w.contrast,
+    saturate: g.saturate * w.saturate * s.saturate,
+    hue: g.hue + s.hue,
+    sepia: s.sepia,
+    tint: g.tint,
+    tintOpacity: g.tintOpacity,
+    tintMultiply: g.tintMultiply,
+    veil: w.veil,
+    fog: Math.min(1, g.fog + w.fog),
+    stars: weather === "clear" ? g.stars : g.stars * 0.25,
     bg,
   };
 }

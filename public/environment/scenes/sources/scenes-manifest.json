@@ -1,0 +1,128 @@
+[
+  {
+    "file": "01-primary/01-montagnes-mer-de-nuages-golden.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/02-foret-vallee-riviere.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/03-vallee-foret-brumeuse-golden.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/04-lac-alpin-montagnes.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/05-falaises-ocean-golden.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/06-cote-rocheuse-vagues.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/07-cascade-riviere-montagnes.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/08-montagnes-enneigees.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/09-canyon-riviere-golden.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "01-primary/10-desert-dunes-golden.png",
+    "width": 1672,
+    "height": 941,
+    "orientation": "landscape",
+    "priority": "primary"
+  },
+  {
+    "file": "02-optional/11-route-foret-vertical.png",
+    "width": 673,
+    "height": 1200,
+    "orientation": "portrait",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/12-ville-tokyo-nuit-vertical.png",
+    "width": 1024,
+    "height": 2048,
+    "orientation": "portrait",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/13-skyline-pont-ville.png",
+    "width": 408,
+    "height": 612,
+    "orientation": "portrait",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/14-illustration-ville-ferris-wheel.png",
+    "width": 1024,
+    "height": 2048,
+    "orientation": "portrait",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/15-cerfs-foret.png",
+    "width": 736,
+    "height": 414,
+    "orientation": "landscape",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/16-colibri-fleur.png",
+    "width": 1200,
+    "height": 678,
+    "orientation": "landscape",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/17-canyon-vertical.png",
+    "width": 1024,
+    "height": 1820,
+    "orientation": "portrait",
+    "priority": "optional"
+  },
+  {
+    "file": "02-optional/18-savane-montagne-vertical.png",
+    "width": 621,
+    "height": 1104,
+    "orientation": "portrait",
+    "priority": "optional"
+  }
+]

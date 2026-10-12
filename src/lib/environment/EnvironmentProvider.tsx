@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef,
 import type { ReactNode } from "react";
 import { SITE } from "@/config/site";
 import { dayPhaseFor, seasonFor, TIMEZONE_COORDS } from "./resolve";
-import { sunTimes } from "./solar";
+import { solarState, sunTimes } from "./solar";
 import { themeFor } from "./theme";
 import type { DayPhase, EnvironmentApiResponse, EnvironmentState, Season, Weather } from "./types";
 
@@ -43,7 +43,9 @@ function readOverrides() {
     const v = q.get(k) as T | null;
     return v && list.includes(v) ? v : null;
   };
-  return { phase: pick("phase", PHASES), weather: pick("weather", WEATHERS), season: pick("season", SEASONS) };
+  // Heure de test (développement uniquement) : ?hour=17.5 → 17 h 30 aujourd'hui, heure locale.
+  const h = process.env.NODE_ENV !== "production" ? Number.parseFloat(q.get("hour") ?? "") : Number.NaN;
+  return { phase: pick("phase", PHASES), weather: pick("weather", WEATHERS), season: pick("season", SEASONS), hour: Number.isFinite(h) ? h : null };
 }
 
 function fallbackCoords(): Coords {
@@ -54,11 +56,16 @@ function fallbackCoords(): Coords {
 }
 
 function computeState(coords: Coords, api: EnvironmentApiResponse | null): EnvironmentState {
-  const now = Date.now();
-  const local = sunTimes(new Date(), coords.lat, coords.lon);
-  const sunrise = api?.sunrise ?? local.sunrise;
-  const sunset = api?.sunset ?? local.sunset;
   const o = readOverrides();
+  let now = Date.now();
+  if (o.hour !== null) {
+    const d = new Date();
+    d.setHours(Math.floor(o.hour), Math.round((o.hour % 1) * 60), 0, 0);
+    now = d.getTime();
+  }
+  const local = sunTimes(new Date(now), coords.lat, coords.lon);
+  const sunrise = o.hour === null ? (api?.sunrise ?? local.sunrise) : local.sunrise;
+  const sunset = o.hour === null ? (api?.sunset ?? local.sunset) : local.sunset;
   return {
     season: o.season ?? seasonFor(new Date(), coords.lat),
     dayPhase: o.phase ?? dayPhaseFor(now, sunrise, sunset),
@@ -67,7 +74,8 @@ function computeState(coords: Coords, api: EnvironmentApiResponse | null): Envir
     cloudCover: api?.cloudCover ?? null,
     sunrise,
     sunset,
-    source: o.phase || o.weather || o.season ? "override" : coords.source,
+    solar: solarState(now, coords.lat, coords.lon, sunrise, sunset),
+    source: o.phase || o.weather || o.season || o.hour !== null ? "override" : coords.source,
   };
 }
 
@@ -170,7 +178,7 @@ export default function EnvironmentProvider({ children }: { children: ReactNode 
     root.dataset.phase = state.dayPhase;
     root.dataset.weather = state.weather;
     root.dataset.season = state.season;
-    const { vars } = themeFor(state.dayPhase, state.weather, state.season);
+    const { vars } = themeFor(state.dayPhase, state.weather, state.season, state.solar);
     Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
     // Transitions lentes seulement après la première application (pas de fondu au chargement).
     if (!root.classList.contains("env-ready")) {

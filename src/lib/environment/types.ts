@@ -1,3 +1,5 @@
+import type { Solar } from "./solar";
+
 export type Season = "spring" | "summer" | "autumn" | "winter";
 export type DayPhase = "dawn" | "day" | "golden" | "dusk" | "night";
 export type Weather = "clear" | "cloudy" | "rain" | "fog" | "snow";
@@ -11,6 +13,8 @@ export type EnvironmentState = {
   cloudCover: number | null;
   sunrise: number;
   sunset: number;
+  /** Course solaire continue (position réelle du soleil), en plus de la phase artistique. */
+  solar: Solar;
   source: "geolocation" | "timezone" | "default" | "override";
 };
 

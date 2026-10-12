@@ -20,5 +20,8 @@ export type WorldCamera = {
 
 export const worldCam: WorldCamera = { intro: 1, scale: 1, x: 0, y: 0, shade: 0, blur: 0, dim: 0 };
 
+/** Le voyage de paysages démarre quand le hero a quitté l'écran (le rocher et le matériel ne flottent jamais). */
+export const worldJourney = { active: false };
+
 /** Origine de l'échelle de sortie / des stations (fraction d'écran). */
 export const CAM_ORIGIN = { x: 0.5, y: 0.18 } as const;
