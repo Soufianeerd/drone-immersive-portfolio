@@ -16,7 +16,9 @@ Next.js 16 (App Router, Turbopack) · React 19 · TypeScript strict · Tailwind 
 
 ```bash
 bun install
-bun dev          # http://localhost:3000
+bun dev          # http://localhost:3017 (admin : /admin)
+bun run db:setup # crée les tables Neon (DATABASE_URL dans .env.local)
+bun run admin:create email "mot de passe" "Prénom"
 bun run lint
 bunx tsc --noEmit
 bun run build

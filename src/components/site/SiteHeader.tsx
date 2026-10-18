@@ -6,13 +6,15 @@ import { HOME_RESET_EVENT, resetToHome } from "@/lib/home";
 import { scrollToSection } from "@/lib/scroll";
 import styles from "./SiteHeader.module.css";
 
-const NAV = SITE.nav;
 
 /**
  * Header NADRA. Le logo réinitialise toujours la home (scène, focus, vue éclatée, scroll).
  * Desktop : cinq entrées ; mobile : menu plein écran. Aucune numérotation décorative.
  */
-export default function SiteHeader() {
+type NavItem = { id: string; label: string };
+
+export default function SiteHeader({ brand = SITE.brand, nav = SITE.nav as readonly NavItem[] }: { brand?: string; nav?: readonly NavItem[] }) {
+  const NAV = nav;
   const [solid, setSolid] = useState(false);
   const [active, setActive] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -28,7 +30,7 @@ export default function SiteHeader() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [NAV]);
 
   // Section courante (indicateur discret dans la navigation).
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function SiteHeader() {
     );
     sections.forEach((s) => io.observe(s));
     return () => io.disconnect();
-  }, [active]);
+  }, [active, NAV]);
 
   useEffect(() => {
     if (!open) return;
@@ -78,14 +80,14 @@ export default function SiteHeader() {
       <a
         href="#top"
         className={styles.brand}
-        aria-label={`${SITE.brand} — retour au début`}
+        aria-label={`${brand} — retour au début`}
         onClick={(e) => {
           e.preventDefault();
           setOpen(false);
           resetToHome();
         }}
       >
-        <span className={styles.wordmark}>{SITE.brand}</span>
+        <span className={styles.wordmark}>{brand}</span>
         <span className={styles.sub}>{SITE.disciplines.join(" · ")}</span>
       </a>
 

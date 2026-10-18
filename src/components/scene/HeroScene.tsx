@@ -75,7 +75,7 @@ const activeLayerStyle = {
   transform: `matrix(${ACTIVE_TO_IDLE.a}, ${ACTIVE_TO_IDLE.b}, ${ACTIVE_TO_IDLE.c}, ${ACTIVE_TO_IDLE.d}, 0, 0)`,
 } as const;
 
-export default function HeroScene() {
+export default function HeroScene({ brand = SITE.brand, headline = SITE.headline }: { brand?: string; headline?: readonly string[] }) {
   const [mode, setMode] = useState<Mode>(HOME);
   const modeRef = useRef<Mode>(HOME);
   const busy = useRef(false);
@@ -663,7 +663,7 @@ export default function HeroScene() {
             <div className={styles.brandBox}>
               <div data-brand-wrap className={styles.brandWrap}>
                 <p data-brand className={styles.brand}>
-                  {SITE.brand}
+                  {brand}
                 </p>
               </div>
             </div>
@@ -676,8 +676,8 @@ export default function HeroScene() {
             {SITE.disciplines.join(" · ")}
           </p>
           <h1 id="hero-title" data-chrome className={styles.headline}>
-            <span className="sr-only">{SITE.brand} — </span>
-            {SITE.headline.map((l, i) => (
+            <span className="sr-only">{brand} — </span>
+            {headline.map((l, i) => (
               <span key={l} className={styles.mask}>
                 <span data-line className={i === 0 ? styles.l1 : styles.l2}>
                   {l}

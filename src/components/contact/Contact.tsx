@@ -27,7 +27,8 @@ const MESSAGES: Record<Exclude<Status, "idle" | "sending">, string> = {
  * CONTACT + footer. Envoi via /api/contact (inactif tant que le webhook n'est pas configuré).
  * Les liens sociaux n'apparaissent que s'ils sont renseignés dans SITE.social.
  */
-export default function Contact() {
+export default function Contact({ brand = SITE.brand, contact }: { brand?: string; contact?: { email: string; phone: string; instagram: string } }) {
+  const social = { instagram: contact?.instagram || SITE.social.instagram, email: contact?.email || SITE.social.email, phone: contact?.phone || "" };
   const [status, setStatus] = useState<Status>("idle");
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -58,8 +59,9 @@ export default function Contact() {
   };
 
   const links = [
-    SITE.social.instagram ? { label: "Instagram", href: SITE.social.instagram } : null,
-    SITE.social.email ? { label: SITE.social.email, href: `mailto:${SITE.social.email}` } : null,
+    social.instagram ? { label: "Instagram", href: social.instagram.startsWith("http") ? social.instagram : `https://instagram.com/${social.instagram.replace(/^@/, "")}` } : null,
+    social.email ? { label: social.email, href: `mailto:${social.email}` } : null,
+    social.phone ? { label: social.phone, href: `tel:${social.phone.replace(/\s/g, "")}` } : null,
   ].filter(Boolean) as { label: string; href: string }[];
 
   return (
@@ -119,7 +121,7 @@ export default function Contact() {
       </div>
 
       <footer className={styles.footer}>
-        <span className={styles.brand}>{SITE.brand}</span>
+        <span className={styles.brand}>{brand}</span>
         <span>{SITE.disciplines.join(" · ")}</span>
         {links.length ? (
           <ul className={styles.links}>

@@ -4,14 +4,13 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CATEGORIES, PLACEHOLDER_SLOTS, WORK } from "@/content/work";
-import type { CategoryId, WorkFormat, WorkItem } from "@/content/work";
+import { PLACEHOLDER_SLOTS } from "@/content/work";
+import type { WorkFormat } from "@/content/work";
+import type { PublicCategory, PublicWork } from "@/lib/cms/types";
 import styles from "./Portfolio.module.css";
 
-type Filter = CategoryId | "all";
-type Entry = { key: string; format: WorkFormat; categories: CategoryId[]; item?: WorkItem };
-
-const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<Filter, string>;
+type Filter = string; // slug de catégorie ou "all"
+type Entry = { key: string; format: WorkFormat; categories: string[]; item?: PublicWork };
 
 /**
  * PORTFOLIO — grille éditoriale à formats variables, filtres par discipline.
@@ -19,7 +18,9 @@ const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Reco
  * explicitement signalés tiennent la mise en page : aucun faux projet, aucun faux client.
  * Chaque réalisation ouvre /portfolio/[slug].
  */
-export default function Portfolio() {
+export default function Portfolio({ categories, work }: { categories: PublicCategory[]; work: PublicWork[] }) {
+  const LABEL: Record<string, string> = useMemo(() => Object.fromEntries(categories.map((c) => [c.slug, c.name])), [categories]);
+  const filters = useMemo(() => [{ id: "all", label: "Tout" }, ...categories.map((c) => ({ id: c.slug, label: c.name }))], [categories]);
   const root = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
   const cursor = useRef<HTMLDivElement>(null);
@@ -28,10 +29,10 @@ export default function Portfolio() {
 
   const entries: Entry[] = useMemo(
     () =>
-      WORK.length
-        ? WORK.map((w) => ({ key: w.slug, format: w.format, categories: w.categories, item: w }))
-        : PLACEHOLDER_SLOTS.map((p, i) => ({ key: `slot-${i}`, format: p.format, categories: p.categories })),
-    [],
+      work.length
+        ? work.map((w) => ({ key: w.slug, format: w.format, categories: w.categories, item: w }))
+        : PLACEHOLDER_SLOTS.map((p, i) => ({ key: `slot-${i}`, format: p.format, categories: p.categories.filter((k) => k in LABEL) })),
+    [work, LABEL],
   );
   const visible = entries.filter((e) => filter === "all" || e.categories.includes(filter));
   const counts = useMemo(() => {
@@ -118,7 +119,7 @@ export default function Portfolio() {
       </header>
 
       <ul data-pf-filters className={styles.filters} aria-label="Filtrer les réalisations">
-        {CATEGORIES.map((c) => (
+        {filters.map((c) => (
           <li key={c.id}>
             <button
               type="button"
@@ -149,7 +150,7 @@ export default function Portfolio() {
               <span className={styles.caption}>
                 <span className={styles.cTitle}>{e.item.title}</span>
                 <span className={styles.cMeta}>
-                  {e.item.categories.map((k) => LABEL[k]).join(" · ")}
+                  {e.item.categories.map((k) => LABEL[k] ?? k).join(" · ")}
                   {e.item.year ? ` — ${e.item.year}` : ""}
                 </span>
               </span>
@@ -185,15 +186,15 @@ export default function Portfolio() {
   );
 }
 
-function Cover({ item }: { item: WorkItem }) {
+function Cover({ item }: { item: PublicWork }) {
   const m = item.cover;
   return (
     <span className={styles.frame}>
       {m?.kind === "video" ? (
-        <video className={styles.media} src={m.src} poster={m.poster} muted loop playsInline preload="metadata" />
+        <video className={styles.media} src={m.url} poster={m.poster ?? undefined} muted loop playsInline preload="metadata" />
       ) : m?.kind === "image" ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className={styles.media} src={m.src} alt={m.alt} loading="lazy" decoding="async" />
+        <img className={styles.media} src={m.url} alt={m.caption || item.title} loading="lazy" decoding="async" />
       ) : (
         <span className={styles.slotFill} aria-hidden />
       )}

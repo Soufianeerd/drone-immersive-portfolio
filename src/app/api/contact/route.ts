@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { db, schema } from "@/db";
 
 /**
  * Formulaire de contact.
- * L'envoi réel n'est actif que si CONTACT_WEBHOOK_URL est défini côté serveur (.env.local, jamais versionné).
- * Sans configuration : réponse 501 explicite — l'interface l'indique honnêtement, rien n'est simulé.
+ * Chaque demande est enregistrée dans la base (onglet « Messages » de l'admin).
+ * En option, CONTACT_WEBHOOK_URL (serveur uniquement) reçoit aussi une copie (n8n, email…).
+ * Sans base ni webhook : réponse explicite « not_configured », rien n'est simulé.
  */
 
 const TYPES = new Set(["mariage", "evenement", "portrait", "drone", "video", "photo", "autre"]);
@@ -27,8 +29,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "invalid" }, { status: 422 });
   }
 
+  const d = db();
+  let stored = false;
+  if (d) {
+    try {
+      await d.insert(schema.messages).values({ name, email, type, body: message });
+      stored = true;
+    } catch (e) {
+      console.error("[contact] insert", e);
+    }
+  }
+
   const hook = process.env.CONTACT_WEBHOOK_URL;
-  if (!hook) return NextResponse.json({ ok: false, error: "not_configured" });
+  if (!hook) return stored ? NextResponse.json({ ok: true }) : NextResponse.json({ ok: false, error: "not_configured" });
 
   try {
     const res = await fetch(hook, {
@@ -40,6 +53,6 @@ export async function POST(req: Request) {
     if (!res.ok) throw new Error(String(res.status));
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ ok: false, error: "upstream" }, { status: 502 });
+    return stored ? NextResponse.json({ ok: true }) : NextResponse.json({ ok: false, error: "upstream" }, { status: 502 });
   }
 }

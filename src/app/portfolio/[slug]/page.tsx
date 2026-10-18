@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SITE } from "@/config/site";
-import { CATEGORIES, WORK } from "@/content/work";
+import { getCategories, getSettings, getWorkBySlug } from "@/lib/cms/read";
 
 /**
  * Page projet — prête pour les réalisations réelles (WORK).
- * Tant que WORK est vide, toute URL renvoie 404 : aucune page fictive.
+ * Contenu géré dans l'admin (collections publiées). Slug inconnu → 404 : aucune page fictive.
  */
 
-const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<string, string>;
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const item = WORK.find((w) => w.slug === slug);
-  return { title: item ? `${item.title} — ${SITE.brand}` : SITE.brand };
+  const [item, settings] = await Promise.all([getWorkBySlug(slug), getSettings()]);
+  return { title: item ? `${item.title} — ${settings.brand}` : settings.brand, description: item?.context?.slice(0, 160) };
 }
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const item = WORK.find((w) => w.slug === slug);
+  const [item, categories] = await Promise.all([getWorkBySlug(slug), getCategories()]);
   if (!item) notFound();
+  const LABEL = Object.fromEntries(categories.map((c) => [c.slug, c.name])) as Record<string, string>;
 
   return (
     <main style={{ padding: "calc(var(--header-h) + 8svh) var(--gutter) 12svh", color: "var(--ambient-text)" }}>
@@ -31,18 +31,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         {item.title}
       </h1>
       <p style={{ fontFamily: "var(--font-geist-mono)", fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ambient-muted)" }}>
-        {item.categories.map((k) => LABEL[k]).join(" · ")}
+        {item.categories.map((k) => LABEL[k] ?? k).join(" · ")}
         {item.year ? ` — ${item.year}` : ""}
         {item.client ? ` — ${item.client}` : ""}
+        {item.location ? ` — ${item.location}` : ""}
       </p>
       {item.context ? <p style={{ maxWidth: "60ch", marginTop: "4svh", lineHeight: 1.6 }}>{item.context}</p> : null}
       <div style={{ display: "grid", gap: "4svh", marginTop: "8svh" }}>
-        {(item.gallery ?? (item.cover ? [item.cover] : [])).map((m, i) =>
+        {(item.gallery.length ? item.gallery : item.cover ? [item.cover] : []).map((m, i) =>
           m.kind === "video" ? (
-            <video key={i} src={m.src} poster={m.poster} controls playsInline style={{ width: "100%" }} />
+            <video key={i} src={m.url} poster={m.poster ?? undefined} controls playsInline style={{ width: "100%" }} />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={m.src} alt={m.alt} loading="lazy" style={{ width: "100%", height: "auto" }} />
+            <img key={i} src={m.url} alt={m.caption || item.title} loading="lazy" style={{ width: "100%", height: "auto" }} />
           ),
         )}
       </div>

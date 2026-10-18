@@ -2,26 +2,31 @@
 
 _Court et factuel. Mis à jour à chaque checkpoint qui change l'état du projet._
 
-## État actuel — Phase 4 « NADRA » (locale, non commitée, en attente de validation visuelle)
-- Référence visuelle officielle : maquette NADRA (paysage montagne, rocher au premier plan, setup FPV posé dessus, nom géant dans le paysage). L'ancienne direction « noir tech / catalogue DJI » est abandonnée.
-- Parcours : Hero (paysage + Goggles / Avata / Controller sur le rocher, survol, focus, vue éclatée Avata) → Showreel → Portfolio → Gear → À propos → Contact.
-- Environment Engine : heure locale + lever/coucher réels + météo (Open-Meteo, `/api/environment`, cache 15 min) + saison → variables CSS `--ambient-*` et étalonnage du paysage. Test : `?phase=night&weather=rain&season=winter`.
-- Repo : https://github.com/Soufianeerd/drone-immersive-portfolio — branche `main`. Rien de cette phase n'est commité ni poussé.
+## État actuel — site NADRA + espace admin
+- Site public : Hero (paysage vivant WebGL ou fond perso, setup FPV en rotation continue au survol) → sections réordonnables depuis l'admin (Showreel, Portfolio, Gear, À propos, Contact).
+- Monde vivant : heure / soleil réels, météo (Open-Meteo), saison, voyage de 10 paysages (`src/config/world.ts`, `WorldCanvas`).
+- Admin `/admin` (Neon + Vercel Blob, email + mot de passe) : mise en page (ordre / visibilité / noms des sections), fond du site (paysage, photo ou vidéo en boucle / boomerang), showreel / teaser, textes, catégories, collections (photos, vidéos, événements) avec envoi de fichiers, messages du formulaire, clients, devis (impression / PDF), réglages.
+- Repo : https://github.com/Soufianeerd/drone-immersive-portfolio — branche `main`.
 
-## Voir le site
-`bun dev` → http://localhost:3017 (port fixé dans package.json).
+## Lancer en local
+1. `cp .env.example .env.local`, puis remplir `DATABASE_URL` (Neon) et `AUTH_SECRET` (`openssl rand -base64 48`).
+2. `bun install && bun run db:setup` (tables + catégories par défaut).
+3. `bun run admin:create email@exemple.com "MotDePasseLong" "Anass"`.
+4. `bun dev` → http://localhost:3017 et http://localhost:3017/admin.
+Sans `BLOB_READ_WRITE_TOKEN`, les fichiers envoyés en local vont dans `public/uploads/` (non versionné).
+Sans `DATABASE_URL`, le site public tourne avec son contenu par défaut.
+
+## Mise en ligne (Vercel)
+Variables : `DATABASE_URL`, `AUTH_SECRET`, `BLOB_READ_WRITE_TOKEN` (Storage → Blob), optionnel `CONTACT_WEBHOOK_URL`.
 
 ## Architecture
-- `src/components/scene/` : HeroScene (machine d'états home/focus/explore/part) + `turntable.ts` (vues multi-angles réelles).
-- `src/components/environment/` : Landscape (master + masque de crête, étoiles, teinte, brume), WeatherCanvas (pluie/neige).
-- `src/lib/environment/` : types, solar, resolve, providers, theme, EnvironmentProvider.
-- `src/components/{showreel,portfolio,gear,about,contact}/`, `src/app/portfolio/[slug]`, `src/app/api/{environment,contact}`.
-- Contenu : `src/config/site.ts` (marque, nav, réseaux), `src/content/{setup,showreel,work,gear}.ts`.
-- Assets paysage : `public/environment/master/` (variantes alignées à venir : `public/environment/{season}/`, manifeste `ENVIRONMENT_VARIANTS`).
+- `src/db/` : schéma Drizzle (Neon / Postgres), migrations dans `drizzle/`, scripts dans `scripts/`.
+- `src/lib/cms/` : lecture publique avec repli sur le contenu par défaut, types, libellés.
+- `src/lib/auth.ts`, `src/lib/session.ts`, `src/proxy.ts` : sessions admin.
+- `src/app/admin/` : pages admin (`(panel)/…`), actions serveur (`actions.ts`), styles.
+- `src/components/scene/` : HeroScene + `turntable.ts` (rotation continue à partir des vraies photos).
+- `src/components/environment/` : WorldCanvas (WebGL), SiteBackground (fond perso), WeatherCanvas.
 
-## En attente de contenus réels
-- Vidéo du showreel (`src/content/showreel.ts`) — état « en montage » affiché tant que `src` est null.
-- Médias portfolio (`src/content/work.ts`) — emplacements neutres « Projet à venir » en attendant.
-- PNG HD détourés multi-angles Goggles 3 / Remote Controller 3 (turntable ; l'Avata utilise déjà ses vues réelles).
-- Variantes photographiques alignées du paysage (aube, jour, nuit, saisons).
-- Logo final, liens Instagram / e-mail, webhook du formulaire (`CONTACT_WEBHOOK_URL`, côté serveur).
+## Reste à faire
+- Finitions : SEO, vitesse, tests mobile, nom de domaine.
+- Plus tard : grande scène « setup » avant le footer, mode Détails / vue éclatée dans Gear.

@@ -4,7 +4,6 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { SHOWREEL } from "@/content/showreel";
 import { lockScroll, unlockScroll } from "@/lib/scroll";
 import styles from "./Showreel.module.css";
 
@@ -13,7 +12,10 @@ import styles from "./Showreel.module.css";
  * pause dès qu'il quitte la zone. Clic : grand lecteur (son, progression, plein écran),
  * retour exact à la position dans la page à la fermeture.
  */
-export default function Showreel() {
+type Reel = { src: string | null; poster: string | null; title: string };
+
+export default function Showreel({ reel }: { reel: Reel }) {
+  const SHOWREEL = { ...reel, srcWebm: null as string | null };
   const root = useRef<HTMLElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const inline = useRef<HTMLVideoElement>(null);
@@ -102,7 +104,7 @@ export default function Showreel() {
         </button>
       </div>
 
-      {open && createPortal(<Player onClose={close} startAt={startAt} onTime={syncInline} />, document.body)}
+      {open && createPortal(<Player reel={reel} onClose={close} startAt={startAt} onTime={syncInline} />, document.body)}
     </section>
   );
 }
@@ -114,7 +116,8 @@ function fmt(t: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function Player({ onClose, startAt, onTime }: { onClose: () => void; startAt: number; onTime: (t: number) => void }) {
+function Player({ onClose, startAt, onTime, reel }: { onClose: () => void; startAt: number; onTime: (t: number) => void; reel: Reel }) {
+  const SHOWREEL = { ...reel, srcWebm: null as string | null };
   const box = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
