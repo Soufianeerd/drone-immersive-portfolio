@@ -2,21 +2,15 @@
  * Prépare la base Neon : crée / met à jour les tables, puis ajoute les catégories et réglages par défaut.
  * Usage : bun run db:setup   (lit DATABASE_URL dans .env.local)
  */
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
+import { migrate as migrateNeon } from "drizzle-orm/neon-http/migrator";
+import { migrate as migratePg } from "drizzle-orm/node-postgres/migrator";
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
 import * as schema from "../src/db/schema";
+import { scriptDb } from "./db";
 
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL manquant dans .env.local");
-  process.exit(1);
-}
-const local = /localhost|127\.0\.0\.1/.test(url);
-const pool = new Pool({ connectionString: url, ssl: local ? undefined : { rejectUnauthorized: true } });
-const db = drizzle(pool, { schema });
-
-await migrate(db, { migrationsFolder: "./drizzle" });
+const { db, local } = scriptDb();
+if (local) await migratePg(db, { migrationsFolder: "./drizzle" });
+else await migrateNeon(db as unknown as NeonHttpDatabase<typeof schema>, { migrationsFolder: "./drizzle" });
 console.log("✓ Tables à jour");
 
 const cats = [
@@ -38,5 +32,4 @@ if (!s.length) {
   await db.insert(schema.settings).values({ id: 1, data: {} });
   console.log("✓ Réglages initialisés");
 }
-await pool.end();
 console.log("Base prête.");
