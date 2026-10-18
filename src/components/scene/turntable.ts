@@ -8,9 +8,9 @@ import { gsap } from "gsap";
  * - Chaque vue partage le référentiel de la vue de repos du hero : posée sur la même ligne de sol,
  *   centroïde alpha aligné, même masse visuelle (`w` = largeur en % de la silhouette de repos,
  *   `x` = décalage horizontal en %). Seule retouche : un gamma global pour rejoindre la lumière de la vue de repos.
- * - Le passage d'une vue réelle à la suivante est masqué dans un mouvement continu (dérive latérale,
- *   légère compression, relais d'opacité sans double exposition), piloté par gsap.ticker.
- * - Couverture incomplète → orbite partielle (aller-retour) plutôt qu'un faux arrière.
+ * - Rotation CONTINUE dès le survol (jamais de pause sur une vue) : l'objet lévite et tourne à vitesse
+ *   constante ; chaque vraie vue balaie son secteur et se fond dans la suivante pendant le mouvement
+ *   (fondu long + léger flou de vitesse), sans retour en arrière visible. Piloté par gsap.ticker.
  */
 
 export type ProductKey = "goggles" | "avata" | "controller";
@@ -47,8 +47,8 @@ export const TURNTABLE: Partial<Record<ProductKey, TurnConfig>> = {
   // Trois orientations réelles (IMG_3286-3289) : repos (3/4 gauche) → 3/4 droit → arrière / dessus, puis retour.
   // La vue intérieure (lentilles) est exclue : raccord physiquement absurde dans une orbite extérieure.
   goggles: {
-    mode: "orbit",
-    cycle: 6.5,
+    mode: "loop",
+    cycle: 5.6,
     frames: [
       { src: "/assets/turntable/real/goggles-3q-droit.webp", angle: 120, w: 107.69, x: -5.37 },
       { src: "/assets/turntable/real/goggles-arriere-dessus.webp", angle: 180, w: 94.8, x: -1.48 },
@@ -56,8 +56,8 @@ export const TURNTABLE: Partial<Record<ProductKey, TurnConfig>> = {
   },
   // Trois orientations réelles (IMG_3290-3292) : gauche (repos) ↔ dessus ↔ droite. Aucun dos inventé.
   controller: {
-    mode: "orbit",
-    cycle: 6.5,
+    mode: "loop",
+    cycle: 5.6,
     frames: [
       { src: "/assets/turntable/real/controller-dessus.webp", angle: 90, w: 79.12, x: 1.54 },
       { src: "/assets/turntable/real/controller-3q-droit.webp", angle: 150, w: 100.95, x: 1.3 },
@@ -70,20 +70,27 @@ const smooth = (a: number, b: number, t: number) => {
   return u * u * (3 - 2 * u);
 };
 
-/** Rotation apparente de part et d'autre d'une vraie vue (°) et dérive latérale associée (%). */
-const YAW = 30;
-const DRIFT = 2.4;
+/** Rotation apparente par secteur (° par vue), dérive latérale (% par vue), demi-largeur du fondu (en vue). */
+const YAW = 26;
+const DRIFT = 3;
+const BLEND = 0.2;
+/** Lévitation : amplitude verticale (% de la hauteur), roulis (°), période (s). */
+const BOB = 1.6;
+const ROLL = 0.7;
+const BOB_PERIOD = 3.2;
 
 /**
  * Pilote un turntable : `layers[0]` = vue de repos, `layers[i]` = frames[i - 1].
  * Chaque calque doit être positionné en absolu dans la même boîte.
  */
 export class ProductTurntable {
-  private path: number[];
-  private seg: number;
-  private pos = 0;
-  private speed = 0;
-  private target = 0; // vitesse visée (0 ou 1)
+  private n: number; // nombre de vues dans la boucle (repos inclus)
+  private seg: number; // durée d'une vue à vitesse de croisière (s)
+  private pos = 0; // position continue dans la boucle, en vues (0 = repos)
+  private speed = 0; // 0..1
+  private target = 0;
+  private lev = 0; // intensité de lévitation 0..1
+  private time = 0;
   private settle: gsap.core.Tween | null = null;
   private running = false;
 
@@ -91,16 +98,17 @@ export class ProductTurntable {
     private layers: HTMLElement[],
     private cfg: TurnConfig,
   ) {
-    const n = cfg.frames.length;
-    const ids = Array.from({ length: n }, (_, i) => i + 1);
-    this.path = cfg.mode === "loop" ? [0, ...ids, 0] : [0, ...ids, ...ids.slice(0, -1).reverse(), 0];
-    this.seg = cfg.cycle / (this.path.length - 1);
+    this.n = cfg.frames.length + 1;
+    this.seg = cfg.cycle / this.n;
   }
 
-  /** Le survol commence : accélération douce jusqu'à la vitesse de croisière. */
+  /** Le survol commence : la rotation démarre aussitôt et monte en vitesse en ~0,5 s. */
   play() {
-    this.settle?.kill();
-    this.settle = null;
+    if (this.settle) {
+      this.settle.kill();
+      this.settle = null;
+      this.speed = Math.max(this.speed, 0.35);
+    }
     this.target = 1;
     if (!this.running) {
       this.running = true;
@@ -108,13 +116,14 @@ export class ProductTurntable {
     }
   }
 
-  /** Le survol s'arrête : décélération, arrêt sur une vraie vue, retour à la vue de repos. */
+  /** Le survol s'arrête : la rotation continue en ralentissant jusqu'à la vue de repos. */
   stop(instant = false) {
     this.target = 0;
     if (instant) {
       this.kill();
       this.pos = 0;
-      this.render(0, 0, 0, 1);
+      this.lev = 0;
+      this.render();
     }
   }
 
@@ -129,97 +138,119 @@ export class ProductTurntable {
 
   private tick = (_t: number, dtMs: number) => {
     const dt = Math.min(dtMs, 50) / 1000;
-    if (this.settle) return;
-    // Accélère en ~0,8 s, décélère en ~0,95 s (jamais d'arrêt net).
-    const ramp = this.target > this.speed ? dt / 0.8 : -dt / 0.95;
-    this.speed = Math.min(1, Math.max(0, this.speed + ramp));
-    const segs = this.path.length - 1;
-    this.pos = (this.pos + (this.speed * dt) / this.seg) % segs;
-    this.draw();
-    if (this.target === 0 && this.speed === 0) this.finish();
+    this.time += dt;
+    // La lévitation suit le survol (montée ~0,6 s, descente ~0,9 s).
+    this.lev = Math.min(1, Math.max(0, this.lev + (this.target ? dt / 0.6 : -dt / 0.9)));
+    if (!this.settle) {
+      if (this.target) {
+        this.speed = Math.min(1, this.speed + dt / 0.5);
+        this.pos = (this.pos + (this.speed * dt) / this.seg) % this.n;
+      } else this.glideHome();
+    }
+    this.render();
+    if (!this.target && !this.settle && this.lev === 0 && this.pos === 0) this.kill();
   };
 
-  /** Termine proprement sur une vraie vue, puis rejoint la vue de repos. */
-  private finish() {
-    const segs = this.path.length - 1;
-    const k = Math.floor(this.pos);
-    const f = this.pos - k;
-    const end = f < 0.2 ? k : k + 1; // jamais d'arrêt entre deux vues
-    const st = { p: this.pos };
-    this.settle = gsap.to(st, {
-      p: end,
-      duration: 0.25 + Math.abs(end - this.pos) * 0.5,
-      ease: "sine.out",
-      onUpdate: () => {
-        this.pos = st.p;
-        this.draw();
-      },
-      onComplete: () => {
-        const e = end % segs;
-        if (this.path[e] === 0) return this.done();
-        // Vue réelle atteinte ; retour à la vue de repos EN REPASSANT par les vraies vues,
-        // par le chemin le plus court (jamais de saut d'angle direct).
-        const forward = segs - e;
-        const target = forward < e ? segs : 0;
-        const dist = Math.abs(target - e);
-        const back = { p: e };
-        this.settle = gsap.to(back, {
-          p: target,
-          duration: Math.min(2.6, Math.max(1, dist * this.seg * 0.6)),
-          delay: 0.12,
-          ease: "sine.inOut",
-          onUpdate: () => {
-            this.pos = back.p;
-            this.draw();
-          },
-          onComplete: () => this.done(),
-        });
-      },
+  /** Fin du survol : décélération continue (aucun arrêt net) jusqu'au repos, toujours dans le sens de rotation. */
+  private glideHome() {
+    if (this.pos === 0) return;
+    const v = Math.max(this.speed, 0.25) / this.seg; // vitesse courante, en vues/s
+    const toRest = this.n - this.pos;
+    const glide = (to: number, then?: () => void) => {
+      const dist = to - this.pos;
+      // power2.out démarre à 2·dist/durée : on raccorde la vitesse actuelle.
+      const duration = Math.min(2.4, Math.max(0.7, (2 * dist) / v));
+      const st = { p: this.pos };
+      this.settle = gsap.to(st, {
+        p: to,
+        duration,
+        ease: "power2.out",
+        onUpdate: () => {
+          this.pos = st.p % this.n;
+        },
+        onComplete: () => {
+          this.pos = to % this.n;
+          this.settle = null;
+          this.speed = 0;
+          then?.();
+        },
+      });
+    };
+    if (toRest <= 1.6) return glide(this.n);
+    // Trop loin du repos : ralentit jusqu'à la prochaine vraie vue, puis fondu doux vers la vue de repos.
+    glide(Math.ceil(this.pos + 0.35), () => {
+      const from = this.pos;
+      const st = { k: 0 };
+      this.settle = gsap.to(st, {
+        k: 1,
+        duration: 0.75,
+        ease: "sine.inOut",
+        onUpdate: () => this.renderDissolve(from, st.k),
+        onComplete: () => {
+          this.settle = null;
+          this.pos = 0;
+        },
+      });
     });
   }
 
-  private done() {
-    this.pos = 0;
-    this.render(0, 0, 0, 1);
-    this.kill();
+  private bob() {
+    const ph = (this.time / BOB_PERIOD) * Math.PI * 2;
+    const e = smooth(0, 1, this.lev);
+    return { y: -Math.sin(ph) * BOB * e, r: Math.sin(ph * 0.5 + 0.8) * ROLL * e };
   }
 
-  private draw() {
-    const segs = this.path.length - 1;
-    const k = Math.floor(this.pos) % segs;
-    const f = this.pos - Math.floor(this.pos);
-    const a = this.path[k];
-    const b = this.path[k + 1];
-    // Sens du mouvement : en orbite, le retour inverse la dérive.
-    const dir = this.cfg.mode === "orbit" && k >= segs / 2 ? -1 : 1;
-    this.render(a, b, f, dir);
+  private apply(el: HTMLElement, o: number, d: number, blur: number, z: string) {
+    const { y, r } = this.bob();
+    el.style.opacity = o.toFixed(3);
+    el.style.zIndex = z;
+    el.style.transformOrigin = "50% 60%";
+    const yaw = d * YAW;
+    const x = d * DRIFT;
+    el.style.transform =
+      Math.abs(d) < 1e-4 && Math.abs(y) < 1e-3 && Math.abs(r) < 1e-3
+        ? ""
+        : `perspective(1600px) translate3d(${x.toFixed(3)}%, ${y.toFixed(3)}%, 0) rotateZ(${r.toFixed(3)}deg) rotateY(${yaw.toFixed(3)}deg)`;
+    el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : "";
   }
 
   /**
-   * Relais a → b à l'avancement f (0..1).
-   * L'objet tourne en continu (rotateY en perspective, vitesse constante) : chaque vraie vue couvre
-   * son secteur de −YAW à +YAW, et le passage à la vue suivante se fait au milieu du mouvement,
-   * sur une fenêtre courte, quand les deux vues sont au même angle apparent.
+   * Chaque vue k est de face à pos = k et balaie son secteur à vitesse constante (yaw ∝ écart).
+   * Autour de chaque frontière (pos = k ± 0,5), les deux vues voisines se fondent pendant qu'elles
+   * continuent toutes deux de tourner dans le même sens : pas de saut, pas de retour en arrière.
    */
-  private render(a: number, b: number, f: number, dir: number) {
-    // Relais court, au moment où les deux vues sont au même angle apparent (milieu du secteur).
-    const s = smooth(0.43, 0.57, f);
+  private render() {
+    const n = this.n;
+    const k = Math.floor(this.pos + 0.5) % n; // vue dominante
+    const d = this.pos - Math.round(this.pos); // écart à la vue dominante (−0,5..0,5)
+    const next = d >= 0 ? (k + 1) % n : (k - 1 + n) % n; // voisine du côté de la frontière
+    const edge = 0.5 - Math.abs(d); // distance à la frontière
+    const s = edge < BLEND ? 0.5 * (1 - smooth(0, 1, edge / BLEND)) : 0; // part de la voisine (0..0,5)
+    const motion = Math.min(1, this.speed * 1.5);
+    const blur = s * 2.4 * motion; // flou de vitesse, maximal à la frontière (identique pour les deux vues)
+    // La vue « en avant » dans le sens de rotation passe au-dessus : l'ordre ne s'inverse jamais à la frontière.
+    const ahead = d >= 0;
     for (let i = 0; i < this.layers.length; i++) {
       const el = this.layers[i];
-      if (i !== a && i !== b) {
-        if (el.style.opacity !== "0") el.style.opacity = "0";
-        continue;
+      if (i === k) {
+        this.apply(el, 1, d, blur, ahead ? "1" : "2");
+      } else if (i === next && s > 0.001) {
+        this.apply(el, smooth(0, 0.5, s), ahead ? d - 1 : d + 1, blur, ahead ? "2" : "1");
+      } else if (el.style.opacity !== "0") {
+        el.style.opacity = "0";
+        el.style.filter = "";
       }
-      const incoming = i === b && a !== b;
-      // Sortante opaque tant que l'entrante n'est pas à moitié installée : pas de double exposition.
-      const o = incoming ? s : a === b ? 1 : Math.min(1, 2 * (1 - s));
-      const u = a === b ? 0 : incoming ? f - 1 : f; // position dans le secteur (−1..1)
-      const yaw = dir * u * YAW;
-      const x = dir * u * DRIFT;
-      el.style.opacity = o.toFixed(3);
-      el.style.zIndex = incoming ? "2" : "1";
-      el.style.transformOrigin = "50% 100%";
-      el.style.transform = u === 0 ? "" : `perspective(1600px) translate3d(${x.toFixed(3)}%, 0, 0) rotateY(${yaw.toFixed(3)}deg)`;
+    }
+  }
+
+  /** Fondu final (hors rotation) d'une vraie vue vers la vue de repos. */
+  private renderDissolve(from: number, t: number) {
+    const a = Math.round(from) % this.n;
+    for (let i = 0; i < this.layers.length; i++) {
+      const el = this.layers[i];
+      if (i === 0) this.apply(el, smooth(0, 0.6, t), 0, 0, "2");
+      else if (i === a) this.apply(el, 1 - smooth(0.4, 1, t), 0, 0, "1");
+      else el.style.opacity = "0";
     }
   }
 }
