@@ -6,7 +6,7 @@ import MediaManager from "@/components/admin/MediaManager";
 import SaveButton from "@/components/admin/SaveButton";
 import { requireDb, schema } from "@/db";
 import { FORMATS, KINDS } from "@/lib/cms/labels";
-import { addMediaAction, deleteCollectionAction, updateCollectionAction } from "../../../actions";
+import { addMediaAction, deleteCollectionAction, togglePublishAction, updateCollectionAction } from "../../../actions";
 import styles from "../../../admin.module.css";
 
 export default async function CollectionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,18 +27,27 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
           </Link>
           <h1 className={styles.h1}>{c.title}</h1>
         </div>
-        {c.published ? (
-          <Link href={`/portfolio/${c.slug}`} target="_blank" className={styles.btnGhost}>
-            Voir sur le site ↗
-          </Link>
-        ) : (
-          <span className={styles.badge}>Brouillon — pas encore visible</span>
-        )}
+        <div className={styles.row}>
+          {c.published ? (
+            <>
+              <span className={styles.badgeOk}>En ligne</span>
+              <Link href={`/portfolio/${c.slug}`} target="_blank" className={styles.btnGhost}>
+                Voir sur le site ↗
+              </Link>
+            </>
+          ) : (
+            <span className={styles.badgeWarn}>Brouillon — pas encore visible sur le site</span>
+          )}
+          <form action={togglePublishAction}>
+            <input type="hidden" name="id" value={c.id} />
+            <SaveButton ghost={c.published}>{c.published ? "Retirer du site" : "Mettre en ligne"}</SaveButton>
+          </form>
+        </div>
       </div>
 
       <section className={styles.card}>
         <h2 className={styles.cardTitle}>Fichiers</h2>
-        <p className={styles.hint}>La première photo ajoutée sert de couverture ; tu peux en choisir une autre. Les flèches changent l&apos;ordre.</p>
+        <p className={styles.hint}>Les fichiers sont enregistrés dès la fin de l&apos;envoi. La première photo sert de couverture ; tu peux en choisir une autre. Clique sur « Mettre en ligne » pour que la collection apparaisse sur le site.</p>
         <MediaManager
           items={items.map((m) => ({ id: m.id, kind: m.kind, url: m.url, caption: m.caption }))}
           coverId={c.coverMediaId}
@@ -52,9 +61,6 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
         <form action={updateCollectionAction}>
           <input type="hidden" name="id" value={c.id} />
           <div className={styles.row} style={{ gap: 22, marginBottom: 14 }}>
-            <label className={styles.check}>
-              <input type="checkbox" name="published" defaultChecked={c.published} /> <b>En ligne</b>
-            </label>
             <label className={styles.check}>
               <input type="checkbox" name="featured" defaultChecked={c.featured} /> Mettre en avant (en premier)
             </label>

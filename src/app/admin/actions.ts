@@ -35,7 +35,7 @@ export async function loginAction(_: unknown, f: FormData) {
   await new Promise((r) => setTimeout(r, 400)); // freine les essais en rafale
   const email = str(f, "email", 200);
   const ok = await login(email, String(f.get("password") ?? ""));
-  if (!ok) return { error: "Email ou mot de passe incorrect.", email };
+  if (!ok) return { error: "Identifiant ou mot de passe incorrect.", email };
   redirect("/admin");
 }
 
@@ -190,9 +190,18 @@ export async function updateCollectionAction(f: FormData) {
       eventDate: dateOrNull(f, "eventDate"),
       format: str(f, "format", 20) || "landscape",
       featured: bool(f, "featured"),
-      published: bool(f, "published"),
     })
     .where(eq(schema.collections.id, id));
+  publish();
+}
+
+export async function togglePublishAction(f: FormData) {
+  await requireAdmin();
+  const d = requireDb();
+  const id = num(f, "id");
+  const c = await d.query.collections.findFirst({ where: eq(schema.collections.id, id) });
+  if (!c) return;
+  await d.update(schema.collections).set({ published: !c.published }).where(eq(schema.collections.id, id));
   publish();
 }
 

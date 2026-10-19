@@ -1,6 +1,7 @@
 /**
  * Crée (ou réinitialise) un compte admin.
- * Usage : bun run admin:create email@exemple.com "MotDePasse" "Prénom"
+ * Usage : bun run admin:create identifiant "MotDePasse" "Prénom"
+ * L'identifiant peut être un email ou un simple nom (ex. Nadra2025) ; il n'est pas sensible à la casse.
  */
 import bcrypt from "bcryptjs";
 import * as schema from "../src/db/schema";
@@ -8,7 +9,7 @@ import { scriptDb } from "./db";
 
 const [email, password, name = ""] = process.argv.slice(2);
 if (!email || !password || password.length < 10) {
-  console.error('Usage : bun run admin:create email "mot de passe (10 caractères min.)" "Prénom"');
+  console.error('Usage : bun run admin:create identifiant "mot de passe (10 caractères min.)" "Prénom"');
   process.exit(1);
 }
 const { db } = scriptDb();

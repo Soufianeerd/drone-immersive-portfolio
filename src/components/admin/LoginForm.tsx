@@ -9,8 +9,8 @@ export default function LoginForm() {
   return (
     <form action={action}>
       <label className={styles.field}>
-        <span>Email</span>
-        <input name="email" type="email" autoComplete="username" required defaultValue={state?.email ?? ""} key={state?.email ?? ""} />
+        <span>Email ou identifiant</span>
+        <input name="email" type="text" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" required defaultValue={state?.email ?? ""} key={state?.email ?? ""} />
       </label>
       <label className={styles.field}>
         <span>Mot de passe</span>

@@ -10,14 +10,14 @@ export default function SaveButton({ children = "Enregistrer", ghost = false, sm
   const [saved, setSaved] = useState(false);
   const was = useRef(false);
   useEffect(() => {
-    if (was.current && !pending) {
-      setSaved(true);
-      const t = setTimeout(() => setSaved(false), 1800);
-      was.current = pending;
-      return () => clearTimeout(t);
-    }
+    if (was.current && !pending) setSaved(true);
     was.current = pending;
   }, [pending]);
+  useEffect(() => {
+    if (!saved) return;
+    const t = setTimeout(() => setSaved(false), 1800);
+    return () => clearTimeout(t);
+  }, [saved]);
   return (
     <button className={`${ghost ? styles.btnGhost : styles.btn} ${small ? styles.btnSmall : ""}`} disabled={pending}>
       {pending ? "Enregistrement…" : saved ? "Enregistré ✓" : children}
