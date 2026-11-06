@@ -1,5 +1,7 @@
 /* Admin : sobre, clair, lisible. Aucune dépendance au thème du site public. */
-.shell {
+/* Couleurs de l'admin : partagées par l'espace connecté et la page de connexion. */
+.shell,
+.login {
   --a-bg: #f5f4f1;
   --a-panel: #ffffff;
   --a-line: #e4e2dc;
@@ -8,6 +10,8 @@
   --a-accent: #1b1c1e;
   --a-ok: #2f7a4f;
   --a-warn: #a4441c;
+}
+.shell {
   position: fixed;
   inset: 0;
   z-index: 100;
