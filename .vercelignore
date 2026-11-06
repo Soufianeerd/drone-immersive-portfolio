@@ -1,0 +1,8 @@
+.env*
+!.env.example
+node_modules
+.next
+public/uploads
+Claude outputs
+.qa-tmp
+.vercel
