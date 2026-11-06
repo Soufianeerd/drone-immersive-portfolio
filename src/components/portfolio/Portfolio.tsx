@@ -23,9 +23,7 @@ export default function Portfolio({ categories, work }: { categories: PublicCate
   const filters = useMemo(() => [{ id: "all", label: "Tout" }, ...categories.map((c) => ({ id: c.slug, label: c.name }))], [categories]);
   const root = useRef<HTMLElement>(null);
   const grid = useRef<HTMLDivElement>(null);
-  const cursor = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<Filter>("all");
-  const [cursorLabel, setCursorLabel] = useState("Voir");
 
   const entries: Entry[] = useMemo(
     () =>
@@ -85,26 +83,6 @@ export default function Portfolio({ categories, work }: { categories: PublicCate
     };
   }, [filter]);
 
-  // Curseur « Voir » (pointeur fin uniquement).
-  useEffect(() => {
-    const c = cursor.current;
-    if (!c || !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-    const x = gsap.quickTo(c, "x", { duration: 0.35, ease: "power3.out" });
-    const y = gsap.quickTo(c, "y", { duration: 0.35, ease: "power3.out" });
-    const move = (e: PointerEvent) => {
-      x(e.clientX);
-      y(e.clientY);
-    };
-    window.addEventListener("pointermove", move, { passive: true });
-    return () => window.removeEventListener("pointermove", move);
-  }, []);
-
-  const showCursor = (label: string) => () => {
-    setCursorLabel(label);
-    gsap.to(cursor.current, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" });
-  };
-  const hideCursor = () => gsap.to(cursor.current, { opacity: 0, scale: 0.4, duration: 0.3, ease: "power2.out" });
-
   return (
     <section ref={root} id="portfolio" className={styles.section} aria-labelledby="portfolio-title">
       <header className={styles.head}>
@@ -143,8 +121,6 @@ export default function Portfolio({ categories, work }: { categories: PublicCate
               href={`/portfolio/${e.item.slug}`}
               data-pf-item
               className={`${styles.item} ${styles[e.format]}`}
-              onPointerEnter={showCursor("Voir")}
-              onPointerLeave={hideCursor}
             >
               <Cover item={e.item} />
               <span className={styles.caption}>
@@ -160,8 +136,6 @@ export default function Portfolio({ categories, work }: { categories: PublicCate
               key={e.key}
               data-pf-item
               className={`${styles.item} ${styles.slot} ${styles[e.format]}`}
-              onPointerEnter={showCursor("Bientôt")}
-              onPointerLeave={hideCursor}
               aria-label={`Emplacement réservé — ${e.categories.map((k) => LABEL[k]).join(", ")}`}
               role="img"
             >
@@ -179,9 +153,6 @@ export default function Portfolio({ categories, work }: { categories: PublicCate
         )}
       </div>
 
-      <div ref={cursor} className={styles.cursor} aria-hidden>
-        {cursorLabel}
-      </div>
     </section>
   );
 }
