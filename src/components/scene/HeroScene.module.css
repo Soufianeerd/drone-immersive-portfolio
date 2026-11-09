@@ -156,6 +156,7 @@
 
 .cta {
   margin-top: clamp(24px, 4cqh, 44px);
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 18px;
@@ -660,11 +661,13 @@
 /* ------------------------------------------------------------------ */
 
 @container hero (aspect-ratio < 1.05) {
+  /* Le nom tient en entier dans la largeur (≈ 5,5 em de large en Michroma). */
   .brand {
     top: 11%;
+    font-size: calc((100vw - 2 * var(--gutter)) / 5.6);
   }
   .copy {
-    top: calc(var(--header-h) + 18cqh);
+    top: calc(var(--header-h) + max(28px, 30cqh - 102px));
     right: var(--gutter);
     max-width: none;
   }
@@ -674,12 +677,14 @@
   .disciplines {
     letter-spacing: 0.3em;
   }
+  /* Setup centré, limité par la hauteur : jamais énorme sur tablette, jamais serré sur petit téléphone. */
   .products {
-    inset: 0;
-    width: auto;
-    height: auto;
-    left: 0;
+    --pw: min(100cqw, 54cqh);
     top: 0;
+    bottom: 0;
+    left: calc((100cqw - var(--pw)) / 2);
+    width: var(--pw);
+    height: auto;
   }
   .goggles {
     left: 2%;
@@ -719,6 +724,51 @@
     padding-bottom: 24px;
     justify-content: flex-start;
     padding-top: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Écran bas à l'horizontale (téléphone tourné)                         */
+/* ------------------------------------------------------------------ */
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .hero {
+    min-height: 0;
+  }
+}
+
+@container hero (aspect-ratio >= 1.05) and (max-height: 540px) {
+  .brand {
+    top: 19%;
+    font-size: 10cqw;
+  }
+  .copy {
+    top: calc(var(--header-h) + 23cqh);
+    max-width: 44cqw;
+  }
+  .disciplines {
+    display: none;
+  }
+  .headline {
+    margin-top: 0;
+    font-size: clamp(20px, 8cqh, 34px);
+  }
+  .cta {
+    margin-top: 4cqh;
+    font-size: 14px;
+  }
+  .play {
+    width: 42px;
+    height: 42px;
+  }
+  /* Rogne surtout le ciel : le setup reste entier sur le rocher. */
+  .products {
+    top: calc(100cqh - var(--bw) * 1441 / 2560 * 0.95);
+  }
+  .panel,
+  .xPanel {
+    padding-top: 8px;
+    padding-bottom: 16px;
   }
 }
 

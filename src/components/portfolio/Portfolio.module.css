@@ -311,6 +311,32 @@
   }
 }
 
+/* Téléphone à l'horizontale : grille large, chaque visuel tient dans l'écran. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .grid {
+    gap: 32px 14px;
+  }
+  .wide {
+    grid-column: span 12;
+  }
+  .landscape {
+    grid-column: span 7;
+  }
+  .portrait {
+    grid-column: span 5;
+  }
+  .tall,
+  .square {
+    grid-column: span 4;
+  }
+  .wide .frame {
+    aspect-ratio: 21 / 9;
+  }
+  .frame {
+    max-height: 78svh;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .frame,
   .media,

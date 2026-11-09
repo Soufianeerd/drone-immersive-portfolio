@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Michroma } from "next/font/google";
 import EnvironmentProvider from "@/lib/environment/EnvironmentProvider";
 import "./globals.css";
@@ -22,6 +22,14 @@ const michroma = Michroma({
 export const metadata: Metadata = {
   title: "NADRA — Anass · Photo, vidéo, drone FPV",
   description: "Portfolio audiovisuel d'Anass : prises de vue en drone FPV, photo et vidéo.",
+};
+
+/** Mobile : largeur de l'appareil, plein écran sous l'encoche (marges via env(safe-area-inset-*)). */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0e0e0e",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

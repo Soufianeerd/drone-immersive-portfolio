@@ -561,6 +561,20 @@
   .shelf {
     flex: none;
   }
+  .name {
+    font-size: 9px;
+  }
+  .sheetPanel {
+    width: 100%;
+    height: 100%;
+  }
+  .inventory {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Composition verticale : seulement téléphone tenu droit (à l'horizontale, la table large tient à l'écran). */
+@media (max-width: 767px) and (orientation: portrait) {
   .stage {
     aspect-ratio: 4 / 5;
     max-height: none;
@@ -575,16 +589,6 @@
     left: calc(var(--mx) * 1%);
     bottom: calc(var(--mb) * 1%);
     width: calc(var(--mw) * 1%);
-  }
-  .name {
-    font-size: 9px;
-  }
-  .sheetPanel {
-    width: 100%;
-    height: 100%;
-  }
-  .inventory {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

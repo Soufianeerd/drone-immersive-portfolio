@@ -41,6 +41,12 @@
   height: 100%;
 }
 
+@media (orientation: landscape) and (max-height: 540px) {
+  .world {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 767px) {
   .world {
     background-image: url("/environment/master/landscape-1280.webp");

@@ -192,7 +192,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 10px 32px;
-  padding: 24px var(--gutter) 28px;
+  padding: 24px var(--gutter) calc(28px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid color-mix(in srgb, var(--ambient-text) 12%, transparent);
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 10px;

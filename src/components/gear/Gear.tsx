@@ -117,7 +117,7 @@ export default function Gear() {
             </span>
           </span>
         </h2>
-        <p className={styles.lede}>Le vrai matériel d’Anass, photographié chez lui. Survolez, puis ouvrez une pièce pour la voir sous tous ses angles réels.</p>
+        <p className={styles.lede}>Le vrai matériel d’Anass, photographié chez lui. <span className="only-hover">Survolez, puis ouvrez</span><span className="only-touch">Touchez</span> une pièce pour la voir sous tous ses angles réels.</p>
       </header>
 
       <div className={styles.shelves} role="tablist" aria-label="Catégories de matériel">

@@ -27,6 +27,12 @@ Variables : `DATABASE_URL`, `AUTH_SECRET`, `BLOB_READ_WRITE_TOKEN` (Storage → 
 - `src/components/scene/` : HeroScene + `turntable.ts` (rotation continue à partir des vraies photos).
 - `src/components/environment/` : WorldCanvas (WebGL), SiteBackground (fond perso), WeatherCanvas.
 
+## Responsive (nov. 2026)
+- Testé Safari (WebKit) + Chrome, 320 px → 2560 px, portrait et paysage.
+- Hero : nom NADRA entier en portrait, setup limité par la hauteur (tablettes), composition dédiée pour téléphone à l'horizontale (pas de hauteur mini, setup entier sur le rocher).
+- Global : viewport + encoche (safe-area), en-tête 52 px à l'horizontale, pas de zoom iOS sur les champs, classes `.only-hover` / `.only-touch`.
+- Gear : composition verticale seulement en portrait, texte « Touchez » sur tactile. Portfolio : grille large à l'horizontale.
+
 ## Reste à faire
-- Finitions : SEO, vitesse, tests mobile, nom de domaine.
+- Finitions : SEO, vitesse, test sur vrais appareils, nom de domaine.
 - Plus tard : grande scène « setup » avant le footer, mode Détails / vue éclatée dans Gear.
